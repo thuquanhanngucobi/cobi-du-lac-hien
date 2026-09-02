@@ -3,22 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thư Quán Hán Ngữ CoBi</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="ink-wash wash-left" aria-hidden="true"></div>
-  <div class="ink-wash wash-right" aria-hidden="true"></div>
+  <title>CoBi Du Lạc Hiên (游乐轩)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
 
-  <div class="floating-ornaments" aria-hidden="true">
-    <div class="lantern lantern-left"><span></span></div>
-    <div class="lantern lantern-right"><span></span></div>
-    <div class="silk-ribbon ribbon-left"></div>
-    <div class="silk-ribbon ribbon-right"></div>
-    <div class="red-umbrella umbrella-left"><i></i></div>
-  </div>
+    body {
+      font-family: 'Noto Serif TC', serif;
+      background-color: #fcf8ec; /* Màu giấy cổ ngã vàng */
+      color: #5c3a21; /* Màu nâu đất sẫm (hợp mệnh Kim) */
+    }
 
+    .scroll-container {
+      background-color: #f4ece1;
+      border: 3px solid #b7906c;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(92, 58, 33, 0.1);
+    }
 
+    .selected { 
+      border-color: #8c2f00 !important; 
+      background-color: #e0ac69 !important; 
+      color: #ffffff !important; 
+    }
     
     .matched { visibility: hidden; }
 
