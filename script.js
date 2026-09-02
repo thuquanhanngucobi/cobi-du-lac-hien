@@ -1,73 +1,66 @@
 // Biến toàn cục để quản lý trạng thái game
-let currentMode = null; // 'lessons' hoặc 'hsk'
-let currentLevel = null; // Dữ liệu của bài/cấp độ đang chọn
-let selectedG1 = null; // Card đang được chọn trong Game 1
-let selectedG2 = { pinyin: null, meaning: null, hanzi: null }; // 3 card đang chọn trong Game 2
-let selectedG3 = { audio: null, hanzi: null }; // 2 card đang chọn trong Game 3
-let matchedCount = 0; // Số cặp đã ghép đúng
-let totalPairs = 0; // Tổng số cặp cần ghép
+let currentMode = null; 
+let currentLevel = null; 
+let selectedG1 = null; 
+let selectedG2 = { pinyin: null, meaning: null, hanzi: null }; 
+let selectedG3 = { audio: null, hanzi: null }; 
+let matchedCount = 0; 
+let totalPairs = 0; 
 
 // --- Xử lý Âm thanh (Web Speech API) ---
-// Tự động phát âm tiếng Trung chuẩn bằng trình duyệt
 function speakChinese(text) {
   if ('speechSynthesis' in window) {
-    // Hủy các phát âm đang chờ để tránh đè âm
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-CN'; // Ngôn ngữ: Tiếng Trung giản thể
-    utterance.rate = 0.8; // Tốc độ nói (0.8 là hơi chậm, dễ nghe)
+    utterance.lang = 'zh-CN'; 
+    utterance.rate = 0.8; 
     window.speechSynthesis.speak(utterance);
   } else {
-    console.warn("Trình duyệt của bạn không hỗ trợ phát âm (Web Speech API).");
+    console.warn("Trình duyệt không hỗ trợ phát âm.");
   }
 }
 
 // --- Xử lý Chuyển đổi Màn hình ---
 function showScreen(screenId) {
-  // Ẩn tất cả các màn hình
   ['mode-select-screen', 'level-select-screen', 'game-select-screen', 'game-play-screen'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
-  // Hiển thị màn hình được yêu cầu
   document.getElementById(screenId).classList.remove('hidden');
 }
 
-// --- Xử lý Chọn Chế độ (Game Mode) ---
+// --- Xử lý Chọn Chế độ ---
 function selectMode(mode) {
   currentMode = mode;
   const levelTitle = document.getElementById('level-title');
   const levelList = document.getElementById('level-list');
-  levelList.innerHTML = ''; // Xóa danh sách cũ
+  levelList.innerHTML = ''; 
 
   const modeData = gameData[mode];
   if (!modeData) return;
 
-  // Tiêu đề màn hình
   levelTitle.innerText = mode === 'lessons' ? "Luyện Khí Tĩnh Thất - Chọn Bài Học" : "Cảnh Giới Tĩnh Thất - Chọn Cấp Độ HSK";
 
-  // Tạo danh sách bài học/cấp độ (Hiển thị dạng cuộn sách nhỏ)
   modeData.forEach((item, index) => {
     const btn = document.createElement('button');
-    btn.className = "scroll-container p-5 text-left flex justify-between items-center hover:border-amber-800";
+    btn.className = "scroll-container p-5 text-left flex justify-between items-center hover:border-[#8b5e34] hover:shadow-md transition";
     btn.onclick = () => selectLevel(index);
     btn.innerHTML = `
       <div>
-        <div class="font-bold text-lg">${item.title}</div>
-        <div class="text-xs text-amber-900/70">${item.words.length} từ vựng</div>
+        <div class="font-bold text-xl">${item.title}</div>
+        <div class="text-sm text-[#7f5539] mt-1">${item.words.length} từ vựng</div>
       </div>
-      <span class="text-amber-800 text-2xl">→</span>
+      <span class="text-[#8b5e34] text-2xl font-bold">→</span>
     `;
     levelList.appendChild(btn);
   });
   showScreen('level-select-screen');
 }
 
-// --- Xử lý Chọn Bài / Cấp độ cụ thể ---
+// --- Xử lý Chọn Bài ---
 function selectLevel(index) {
   currentLevel = gameData[currentMode][index];
   document.getElementById('selected-level-name').innerText = currentLevel.title;
   
-  // Logic kiểm tra xem Game 3 (Câu) có dữ liệu không
   const btnGame3 = document.getElementById('btn-game-3');
   const hasSentences = currentLevel.sentences && currentLevel.sentences.length > 0;
   
@@ -82,151 +75,133 @@ function selectLevel(index) {
   showScreen('game-select-screen');
 }
 
-// --- Khởi tạo Game ---
 function startGame(gameNumber) {
   showScreen('game-play-screen');
   document.getElementById('win-message').classList.add('hidden');
-  // Ẩn tất cả khu vực chơi game
   ['game1-area', 'game2-area', 'game3-area'].forEach(id => document.getElementById(id).classList.add('hidden'));
-
-  matchedCount = 0; // Reset số cặp đã ghép
-
-  // Khởi tạo game tương ứng
+  matchedCount = 0; 
   if (gameNumber === 1) initGame1();
   else if (gameNumber === 2) initGame2();
   else if (gameNumber === 3) initGame3();
 }
 
 // ==============================================================================
-// ==================== GAME 1: LINH THẠCH GHÉP CẶP =====================
+// ==================== GAME 1: LINH THẠCH GHÉP CẶP (Chia 2 Cột) ================
 // ==============================================================================
 function initGame1() {
   document.getElementById('game1-area').classList.remove('hidden');
-  document.getElementById('game-status').innerText = "Game 1: Ghép cặp Hán tự & Nghĩa/Audio";
+  document.getElementById('game-status').innerText = "Game 1: Ghép Hán tự & Nghĩa";
   
-  const container = document.getElementById('g1-cards');
-  container.innerHTML = ''; // Xóa card cũ
+  const colHanzi = document.getElementById('g1-col-hanzi');
+  const colMeaning = document.getElementById('g1-col-meaning');
+  colHanzi.innerHTML = '';
+  colMeaning.innerHTML = '';
   selectedG1 = null;
 
-  let cards = [];
-  // Tạo 2 loại card cho mỗi từ: Hán tự và Nghĩa
+  let hanziCards = [];
+  let meaningCards = [];
+
   currentLevel.words.forEach((w, idx) => {
-    cards.push({ id: idx, type: 'hanzi', content: w.hanzi, word: w });
-    cards.push({ id: idx, type: 'meaning', content: w.meaning, word: w });
+    hanziCards.push({ id: idx, type: 'hanzi', content: w.hanzi, word: w });
+    meaningCards.push({ id: idx, type: 'meaning', content: w.meaning, word: w });
   });
 
-  // Trộn bài ngẫu nhiên
-  cards.sort(() => Math.random() - 0.5);
+  // Trộn bài độc lập cho mỗi cột
+  hanziCards.sort(() => Math.random() - 0.5);
+  meaningCards.sort(() => Math.random() - 0.5);
   totalPairs = currentLevel.words.length;
 
-  // Tạo các button card và chèn vào lưới
-  cards.forEach((card) => {
-    const btn = document.createElement('button');
-    btn.className = "scroll-container p-6 text-xl font-bold flex items-center justify-center min-h-[110px] text-center hover:scale-105 transition-transform duration-200";
-    btn.innerText = card.content;
-    btn.onclick = () => handleG1Click(btn, card);
-    container.appendChild(btn);
-  });
+  hanziCards.forEach(card => colHanzi.appendChild(createG1Btn(card)));
+  meaningCards.forEach(card => colMeaning.appendChild(createG1Btn(card)));
+}
+
+function createG1Btn(card) {
+  const btn = document.createElement('button');
+  // Styling lớn, rõ ràng dễ đọc
+  btn.className = "w-full scroll-container p-4 text-xl md:text-2xl font-bold flex items-center justify-center min-h-[90px] text-center hover:scale-[1.02] hover:border-[#8b5e34] transition-all duration-200";
+  btn.innerText = card.content;
+  btn.onclick = () => handleG1Click(btn, card);
+  return btn;
 }
 
 function handleG1Click(btn, card) {
-  // Phát âm khi click vào card Hán tự
   if (card.type === 'hanzi') speakChinese(card.word.hanzi);
   
-  // Chưa có card nào được chọn
   if (!selectedG1) {
     selectedG1 = { btn, card };
-    btn.classList.add('selected'); // Đánh dấu đã chọn
+    btn.classList.add('selected');
   } else {
-    // Click lại vào chính card đó -> Bỏ chọn
     if (selectedG1.btn === btn) {
       btn.classList.remove('selected');
       selectedG1 = null;
       return;
     }
-
-    // Kiểm tra xem 2 card có phải là một cặp (cùng ID) nhưng khác loại (Hanzi vs Meaning)
+    // Check match
     if (selectedG1.card.id === card.id && selectedG1.card.type !== card.type) {
-      // ĐÚNG: Ẩn cặp card
       btn.classList.add('matched');
       selectedG1.btn.classList.add('matched');
       matchedCount++;
-      // Kiểm tra xem đã thắng chưa
       if (matchedCount === totalPairs) checkWin();
     } else {
-      // SAI: Bỏ đánh dấu card trước đó
       selectedG1.btn.classList.remove('selected');
     }
-    selectedG1 = null; // Reset card đang chọn
+    selectedG1 = null; 
   }
 }
 
 // ==============================================================================
-// ====================== GAME 2: TAM BẢO NỐI TỪ =========================
+// ====================== GAME 2: TAM BẢO NỐI TỪ (Hán -> Pinyin -> Nghĩa) =======
 // ==============================================================================
 function initGame2() {
   document.getElementById('game2-area').classList.remove('hidden');
-  document.getElementById('game-status').innerText = "Game 2: Nối 3 cột Pinyin - Tiếng Việt - Hán tự";
+  document.getElementById('game-status').innerText = "Game 2: Nối Hán tự - Pinyin - Nghĩa";
   
-  selectedG2 = { pinyin: null, meaning: null, hanzi: null }; // Reset trạng thái chọn
+  selectedG2 = { pinyin: null, meaning: null, hanzi: null }; 
   totalPairs = currentLevel.words.length;
 
+  const colHanzi = document.getElementById('g2-col-hanzi');
   const colPinyin = document.getElementById('g2-col-pinyin');
   const colMeaning = document.getElementById('g2-col-meaning');
-  const colHanzi = document.getElementById('g2-col-hanzi');
 
-  // Xóa dữ liệu cũ và chèn tiêu đề cột
-  colPinyin.innerHTML = '<h4 class="font-bold text-lg mb-3">Pinyin</h4>';
-  colMeaning.innerHTML = '<h4 class="font-bold text-lg mb-3">Nghĩa</h4>';
-  colHanzi.innerHTML = '<h4 class="font-bold text-lg mb-3">Hán Tự</h4>';
+  colHanzi.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Hán Tự</h4>';
+  colPinyin.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Pinyin</h4>';
+  colMeaning.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Nghĩa</h4>';
 
-  // Hàm trộn danh sách
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-  // Tạo và trộn card cho 3 cột
+  shuffle(currentLevel.words).forEach(w => colHanzi.appendChild(createG2Btn(w.hanzi, 'hanzi', w)));
   shuffle(currentLevel.words).forEach(w => colPinyin.appendChild(createG2Btn(w.pinyin, 'pinyin', w)));
   shuffle(currentLevel.words).forEach(w => colMeaning.appendChild(createG2Btn(w.meaning, 'meaning', w)));
-  shuffle(currentLevel.words).forEach(w => colHanzi.appendChild(createG2Btn(w.hanzi, 'hanzi', w)));
 }
 
-// Hàm tạo button card cho Game 2
 function createG2Btn(text, type, word) {
   const btn = document.createElement('button');
-  btn.className = `w-full scroll-container p-3 text-sm text-center font-semibold hover:border-amber-800 transition`;
+  btn.className = `w-full scroll-container p-3 text-base md:text-lg font-semibold hover:border-[#8b5e34] transition`;
+  if (type === 'hanzi') btn.classList.add('text-xl'); // Chữ hán cho to hơn 1 chút
   btn.innerText = text;
   
   btn.onclick = () => {
-    // Phát âm khi click vào Hán tự
     if (type === 'hanzi') speakChinese(word.hanzi);
 
-    // Unselect card cũ trong CÙNG cột
     if (selectedG2[type]) selectedG2[type].btn.classList.remove('selected');
 
-    // Đánh dấu card mới được chọn
     selectedG2[type] = { btn, word };
     btn.classList.add('selected');
 
-    // Kiểm tra xem đã chọn đủ 3 cột chưa
     if (selectedG2.pinyin && selectedG2.meaning && selectedG2.hanzi) {
-      // Kiểm tra xem 3 card có cùng ID (cùng 1 từ) không
       if (selectedG2.pinyin.word.hanzi === selectedG2.meaning.word.hanzi && 
           selectedG2.meaning.word.hanzi === selectedG2.hanzi.word.hanzi) {
         
-        // ĐÚNG: Ẩn cả 3 card
         selectedG2.pinyin.btn.classList.add('matched');
         selectedG2.meaning.btn.classList.add('matched');
         selectedG2.hanzi.btn.classList.add('matched');
-
         matchedCount++;
-        // Kiểm tra xem đã thắng chưa
         if (matchedCount === totalPairs) checkWin();
       } else {
-        // SAI: Bỏ đánh dấu cả 3 card
         selectedG2.pinyin.btn.classList.remove('selected');
         selectedG2.meaning.btn.classList.remove('selected');
         selectedG2.hanzi.btn.classList.remove('selected');
       }
-      // Reset trạng thái chọn cho lượt tiếp theo
       selectedG2 = { pinyin: null, meaning: null, hanzi: null };
     }
   };
@@ -234,88 +209,113 @@ function createG2Btn(text, type, word) {
 }
 
 // ==============================================================================
-// ====================== GAME 3: THÍNH ÂM TẦM CÂU ========================
+// ====================== GAME 3: THÍNH ÂM TẦM CÂU (Lọc Audio & Xoá Pinyin) =====
 // ==============================================================================
+
+// Hàm cực kỳ quan trọng: Lọc riêng tiếng Trung để loa đọc và bỏ Pinyin hiển thị
+function parseG3Sentence(rawText) {
+  // 1. Lọc lấy Hán Tự & số để Audio đọc (Bỏ qua tiếng Việt/Pinyin)
+  const chineseMatches = rawText.match(/[\u4e00-\u9fa5，。！？、0-9]+/g);
+  const chineseOnly = chineseMatches ? chineseMatches.join('') : rawText;
+
+  // 2. Lọc bỏ Pinyin để làm text hiển thị gọn gàng
+  let display = rawText;
+  
+  // Xử lý form: "Wǒ jiào Kǎmǎlā. (我叫卡玛拉。) - Tôi tên là Kamala."
+  const matchPinyinFirst = rawText.match(/^(.*?)[\(（]([\u4e00-\u9fa5，。！？、0-9]+)[\)）](.*)$/);
+  if (matchPinyinFirst) {
+    display = matchPinyinFirst[2] + matchPinyinFirst[3]; // Gộp Hán tự và Nghĩa
+  } else {
+    // Nếu ko có ngoặc mà Pinyin đứng đầu (dấu hiệu: chữ latin đứng trước Hán tự)
+    const firstHanzi = rawText.search(/[\u4e00-\u9fa5]/);
+    if (firstHanzi > 0) {
+      const beforeStr = rawText.substring(0, firstHanzi);
+      if (/[a-zA-Z]/.test(beforeStr)) {
+        display = rawText.substring(firstHanzi); // Cắt bỏ đoạn latin phía trước
+      }
+    }
+  }
+
+  // Dọn dẹp các dấu gạch ngang/ngoặc thừa ở đầu câu sau khi cắt
+  display = display.replace(/^[\)）\s\-]+/, '');
+  // Dọn dẹp pinyin lọt thỏm trong ngoặc ở cuối câu VD: "我20岁 (wǒ èrshí suì)"
+  display = display.replace(/[\(（][a-zA-Z\s\dōōóòǒōāáǎàēéěèīíǐìūúǔùǖǘǚǜü]+[\)）]/g, '');
+
+  return { chineseOnly, display };
+}
+
 function initGame3() {
   document.getElementById('game3-area').classList.remove('hidden');
-  document.getElementById('game-status').innerText = "Game 3: Nghe Audio câu và nối Hán tự";
+  document.getElementById('game-status').innerText = "Game 3: Nghe Audio và nối Hán tự";
 
-  selectedG3 = { audio: null, hanzi: null }; // Reset trạng thái chọn
+  selectedG3 = { audio: null, hanzi: null }; 
   const sentences = currentLevel.sentences || [];
   totalPairs = sentences.length;
 
   const colAudio = document.getElementById('g3-col-audio');
   const colHanzi = document.getElementById('g3-col-hanzi');
 
-  // Tiêu đề cột
-  colAudio.innerHTML = '<h4 class="font-bold text-lg mb-3">Phát Âm (Click nghe)</h4>';
-  colHanzi.innerHTML = '<h4 class="font-bold text-lg mb-3">Câu Hán Tự</h4>';
+  colAudio.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Phát Âm Tiếng Trung</h4>';
+  colHanzi.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Câu Hán Tự & Nghĩa</h4>';
 
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-  // Tạo và trộn card cho 2 cột: Audio (Nút loa) và Hán tự (Văn bản)
   shuffle(sentences).forEach((s, idx) => {
-    // Cột Audio
+    const parsed = parseG3Sentence(s.hanzi);
+    
+    // Nút Audio (Trái)
     const btn = document.createElement('button');
-    btn.className = "w-full scroll-container p-4 text-center text-lg flex items-center justify-center hover:border-amber-800 transition";
-    btn.innerHTML = `<span>🔊 Câu ${idx + 1}</span>`; // Hiển thị số thứ tự câu
+    btn.className = "w-full scroll-container p-6 text-center text-xl font-bold flex items-center justify-center hover:border-[#8b5e34] transition";
+    btn.innerHTML = `<span class="mr-2 text-2xl">🔊</span> Câu ${idx + 1}`; 
     
     btn.onclick = () => {
-      speakChinese(s.hanzi); // Phát âm câu tiếng Trung
-      // Xử lý chọn card
+      speakChinese(parsed.chineseOnly); // CHỈ đọc phần tiếng Trung đã trích xuất
+      
       if (selectedG3.audio) selectedG3.audio.btn.classList.remove('selected');
       selectedG3.audio = { btn, sentence: s };
       btn.classList.add('selected');
-      checkG3Match(); // Kiểm tra ghép cặp
+      checkG3Match(); 
     };
     colAudio.appendChild(btn);
   });
 
   shuffle(sentences).forEach(s => {
-    // Cột Hán tự
+    const parsed = parseG3Sentence(s.hanzi);
+
+    // Nút Hiển thị chữ (Phải)
     const btn = document.createElement('button');
-    btn.className = "w-full scroll-container p-4 text-left font-semibold hover:border-amber-800 transition";
-    btn.innerText = s.hanzi; // Hiển thị câu Hán tự
+    btn.className = "w-full scroll-container p-5 text-left text-lg font-semibold hover:border-[#8b5e34] transition leading-relaxed";
+    btn.innerText = parsed.display; // CHỈ hiển thị Hán Tự và Nghĩa, xoá Pinyin rườm rà
     
     btn.onclick = () => {
-      // Xử lý chọn card
       if (selectedG3.hanzi) selectedG3.hanzi.btn.classList.remove('selected');
       selectedG3.hanzi = { btn, sentence: s };
       btn.classList.add('selected');
-      checkG3Match(); // Kiểm tra ghép cặp
+      checkG3Match(); 
     };
     colHanzi.appendChild(btn);
   });
 }
 
-// Kiểm tra ghép cặp cho Game 3
 function checkG3Match() {
   if (selectedG3.audio && selectedG3.hanzi) {
-    // Kiểm tra xem card Audio và Hán tự có cùng ID câu không
     if (selectedG3.audio.sentence.hanzi === selectedG3.hanzi.sentence.hanzi) {
-      // ĐÚNG: Ẩn cặp card
       selectedG3.audio.btn.classList.add('matched');
       selectedG3.hanzi.btn.classList.add('matched');
       matchedCount++;
-      // Kiểm tra xem đã thắng chưa
       if (matchedCount === totalPairs) checkWin();
     } else {
-      // SAI: Bỏ đánh dấu cả 2 card
       selectedG3.audio.btn.classList.remove('selected');
       selectedG3.hanzi.btn.classList.remove('selected');
     }
-    // Reset trạng thái chọn
     selectedG3 = { audio: null, hanzi: null };
   }
 }
 
 // --- Xử lý Chiến thắng ---
 function checkWin() {
-  // Thêm độ trễ nhỏ để người dùng kịp thấy card cuối cùng biến mất
   setTimeout(() => {
-    // Ẩn tất cả khu vực chơi game
     ['game1-area', 'game2-area', 'game3-area'].forEach(id => document.getElementById(id).classList.add('hidden'));
-    // Hiển thị màn hình Win
     document.getElementById('win-message').classList.remove('hidden');
   }, 600);
 }
