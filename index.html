@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CoBi Du Lạc Hiên (游乐轩)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* CSS Tùy chỉnh để tạo phong cách cổ phong */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
+
+    body {
+      font-family: 'Noto Serif TC', serif; /* Phông chữ cổ trang */
+      background-color: #fefae0; /* Màu giấy cổ hơi ngã vàng */
+      color: #7f5539; /* Màu chữ nâu đất sẫm (Mệnh Kim) */
+    }
+
+    .scroll-container {
+      background-image: url('https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/scroll_bg.png'); /* Cần một ảnh nền cuộn sách hoặc texture giấy cổ */
+      background-size: cover;
+      border: 10px solid #b7906c; /* Màu viền gỗ cuộn sách */
+      border-radius: 10px;
+    }
+
+    .selected { border-color: #b7906c !important; background-color: #e0ac69 !important; color: white; }
+    .matched { visibility: hidden; }
+
+    /* Keyframes cho đèn lồng đung đưa nhẹ */
+    @keyframes sway {
+      0% { transform: rotate(-1deg); }
+      50% { transform: rotate(1deg); }
+      100% { transform: rotate(-1deg); }
+    }
+    .lantern { animation: sway 3s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+  <header class="w-full max-w-5xl flex flex-col items-center mb-10 relative">
+    <img src="https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/lantern.png" alt="Đèn lồng" class="absolute left-0 top-0 h-24 lantern hidden md:block">
+    <img src="https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/lantern.png" alt="Đèn lồng" class="absolute right-0 top-0 h-24 lantern hidden md:block">
+    
+    <img src="path/to/your/logo_cobi.png" alt="CoBi Chinese Logo" class="h-28 mb-4">
+    
+    <h1 class="text-4xl md:text-5xl font-bold text-center tracking-wide">CoBi Du Lạc Hiên (游乐轩)</h1>
+    <p class="text-lg md:text-xl italic mt-2 text-center">"Tự do dạo chơi – Ngàn từ tự đến."<br>(悠然游乐，千词自来)</p>
+  </header>
+
+  <main class="w-full max-w-4xl flex-1 flex flex-col items-center relative">
+    
+    <img src="https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/fan.png" alt="Quạt cổ" class="absolute -left-20 -bottom-10 h-32 hidden lg:block opacity-50">
+    <img src="https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/books.png" alt="Sách cổ" class="absolute -right-20 -bottom-10 h-32 hidden lg:block opacity-50">
+
+    <div id="mode-select-screen" class="w-full flex flex-col md:flex-row gap-8 mt-4">
+      <button onclick="selectMode('lessons')" class="flex-1 scroll-container p-8 text-center flex flex-col items-center hover:scale-105 transition-transform duration-300">
+        <img src="https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/incense.png" alt="Lư hương" class="h-16 mb-4">
+        <h2 class="text-3xl font-bold mb-2">Luyện Khí Tĩnh Thất</h2>
+        <p class="text-lg">Chơi game theo bài học</p>
+        <p class="text-sm mt-1 italic">炼气静室</p>
+      </button>
+      
+      <button onclick="selectMode('hsk')" class="flex-1 scroll-container p-8 text-center flex flex-col items-center hover:scale-105 transition-transform duration-300">
+        <img src="https://raw.githubusercontent.com/CoBi-Chinese/cobidulachien-assets/main/pagoda.png" alt="Lầu các" class="h-16 mb-4">
+        <h2 class="text-3xl font-bold mb-2">Cảnh Giới Tĩnh Thất</h2>
+        <p class="text-lg">Chơi game theo cấp HSK</p>
+        <p class="text-sm mt-1 italic">境界静室</p>
+      </button>
+    </div>
+
+    <div id="level-select-screen" class="hidden w-full">
+      <button onclick="showScreen('mode-select-screen')" class="mb-6 text-xl hover:underline text-amber-800">← Quay lại chọn chế độ</button>
+      <h2 id="level-title" class="text-2xl font-bold mb-6 text-center text-amber-900"></h2>
+      <div id="level-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </div>
+    </div>
+
+    <div id="game-select-screen" class="hidden w-full">
+      <button onclick="showScreen('level-select-screen')" class="mb-6 text-xl hover:underline text-amber-800">← Quay lại danh sách bài</button>
+      <h2 id="selected-level-name" class="text-2xl font-bold mb-8 text-center text-amber-900"></h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button onclick="startGame(1)" class="scroll-container p-6 flex flex-col items-start hover:border-amber-800 transition">
+          <h3 class="font-bold text-lg mb-2">Game 1: Linh Thạch Ghép Cặp</h3>
+          <p class="text-xs">Ghép Hán tự với Nghĩa tiếng Việt & Phát âm audio.</p>
+        </button>
+        <button onclick="startGame(2)" class="scroll-container p-6 flex flex-col items-start hover:border-amber-800 transition">
+          <h3 class="font-bold text-lg mb-2">Game 2: Tam Bảo Nối Từ</h3>
+          <p class="text-xs">Nối 3 cột: Pinyin - Tiếng Việt - Hán tự.</p>
+        </button>
+        <button id="btn-game-3" onclick="startGame(3)" class="scroll-container p-6 flex flex-col items-start hover:border-amber-800 transition">
+          <h3 class="font-bold text-lg mb-2">Game 3: Thính Âm Tầm Câu</h3>
+          <p class="text-xs">Nghe audio câu và nối với Hán tự tương ứng.</p>
+        </button>
+      </div>
+    </div>
+
+    <div id="game-play-screen" class="hidden w-full scroll-container p-6">
+      <div class="flex justify-between items-center mb-6">
+        <button onclick="showScreen('game-select-screen')" class="hover:underline text-amber-800">← Đổi Game</button>
+        <span id="game-status" class="text-lg font-semibold"></span>
+      </div>
+
+      <div id="game1-area" class="hidden">
+        <div id="g1-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+      </div>
+
+      <div id="game2-area" class="hidden">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+          <div id="g2-col-pinyin" class="space-y-2"></div>
+          <div id="g2-col-meaning" class="space-y-2"></div>
+          <div id="g2-col-hanzi" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <div id="game3-area" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div id="g3-col-audio" class="space-y-3"></div>
+          <div id="g3-col-hanzi" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <div id="win-message" class="hidden text-center py-16">
+        <h2 class="text-4xl font-bold mb-4">🎉 ĐẠI CÔNG CÁO THÀNH!</h2>
+        <p class="text-xl mb-8">Bạn đã hoàn thành thử thách tu luyện này.</p>
+        <button onclick="showScreen('game-select-screen')" class="bg-[#b7906c] text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-[#a07a56]">Chọn bài học tiếp theo</button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="w-full max-w-5xl text-center mt-12 py-6 border-t border-amber-900/20">
+    <p class="text-sm">&copy; 2023 CoBi Chinese. All rights reserved.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
