@@ -6,13 +6,15 @@
   <title>CoBi Du Lạc Hiên (游乐轩)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Bổ sung Font Lora (Tiếng Việt) và Noto Serif TC (Tiếng Trung) -->
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
-
     body {
-      font-family: 'Noto Serif TC', serif;
+      /* Kết hợp font Serif Tiếng Việt có chân và font Tiếng Trung */
+      font-family: 'Lora', 'Noto Serif TC', serif;
       background-color: #fefae0; /* Màu giấy cổ ngả vàng */
       color: #7f5539; /* Màu chữ nâu đất sẫm (mệnh Kim) */
+      line-height: 1.6;
     }
 
     .scroll-container {
@@ -45,12 +47,9 @@
 
   <!-- Header -->
   <header class="w-full max-w-5xl flex flex-col items-center mb-10 relative">
-    <!-- Đèn lồng bên trái -->
     <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/denlong.png" alt="Đèn lồng" class="absolute left-0 top-0 h-28 md:h-36 lantern hidden sm:block">
-    <!-- Đèn lồng bên phải -->
     <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/denlong.png" alt="Đèn lồng" class="absolute right-0 top-0 h-28 md:h-36 lantern hidden sm:block">
     
-    <!-- Logo -->
     <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/LOGO%20NEW.png" alt="Hán Ngữ CoBi Logo" class="h-28 md:h-32 mb-4 drop-shadow-md">
     
     <h1 class="text-3xl md:text-5xl font-bold text-center tracking-wide text-[#5c3d2e]">CoBi Du Lạc Hiên (游乐轩)</h1>
@@ -59,8 +58,6 @@
 
   <!-- Main Content -->
   <main class="w-full max-w-4xl flex-1 flex flex-col items-center relative">
-    
-    <!-- Quạt cổ trang trí bên góc -->
     <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/quat.png" alt="Quạt cổ" class="absolute -right-16 -bottom-6 h-32 md:h-44 hidden lg:block opacity-75 pointer-events-none">
 
     <!-- Screen 1: Chọn Khu Vực -->
@@ -93,82 +90,86 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <button onclick="startGame(1)" class="scroll-container p-6 flex flex-col items-start hover:border-[#8b5e34] transition">
           <h3 class="font-bold text-lg mb-2 text-[#5c3d2e]">Game 1: Linh Thạch Ghép Cặp</h3>
-          <p class="text-xs">Ghép Hán tự với Nghĩa tiếng Việt & Phát âm audio.</p>
+          <p class="text-sm">Ghép Hán tự với Nghĩa tiếng Việt & Phát âm audio.</p>
         </button>
         <button onclick="startGame(2)" class="scroll-container p-6 flex flex-col items-start hover:border-[#8b5e34] transition">
           <h3 class="font-bold text-lg mb-2 text-[#5c3d2e]">Game 2: Tam Bảo Nối Từ</h3>
-          <p class="text-xs">Nối 3 cột: Pinyin - Tiếng Việt - Hán tự.</p>
+          <p class="text-sm">Nối 3 cột: Hán tự - Pinyin - Tiếng Việt.</p>
         </button>
         <button id="btn-game-3" onclick="startGame(3)" class="scroll-container p-6 flex flex-col items-start hover:border-[#8b5e34] transition">
           <h3 class="font-bold text-lg mb-2 text-[#5c3d2e]">Game 3: Thính Âm Tầm Câu</h3>
-          <p class="text-xs">Nghe audio câu và nối với Hán tự tương ứng.</p>
+          <p class="text-sm">Nghe audio và nối với Hán tự tương ứng.</p>
         </button>
       </div>
     </div>
 
     <!-- Screen 4: Khung Chơi Game -->
-    <div id="game-play-screen" class="hidden w-full scroll-container p-6">
-      <div class="flex justify-between items-center mb-6">
-        <button onclick="showScreen('game-select-screen')" class="hover:underline font-bold text-[#8b5e34]">← Đổi Game</button>
-        <span id="game-status" class="text-lg font-bold text-[#5c3d2e]"></span>
+    <div id="game-play-screen" class="hidden w-full scroll-container p-6 md:p-10">
+      <div class="flex justify-between items-center mb-8 border-b-2 border-[#b7906c]/30 pb-4">
+        <button onclick="showScreen('game-select-screen')" class="hover:underline font-bold text-[#8b5e34] text-lg">← Đổi Game</button>
+        <span id="game-status" class="text-xl font-bold text-[#5c3d2e]"></span>
       </div>
 
-      <!-- Game 1 Area -->
+      <!-- Game 1 Area (Tách 2 cột rõ ràng) -->
       <div id="game1-area" class="hidden">
-        <div id="g1-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        <div class="grid grid-cols-2 gap-4 md:gap-12">
+          <!-- Cột Hán Tự -->
+          <div>
+            <h4 class="font-bold text-xl mb-4 text-center text-[#5c3d2e] border-b-2 border-[#b7906c] pb-2">Hán Tự</h4>
+            <div id="g1-col-hanzi" class="space-y-3"></div>
+          </div>
+          <!-- Cột Nghĩa -->
+          <div>
+            <h4 class="font-bold text-xl mb-4 text-center text-[#5c3d2e] border-b-2 border-[#b7906c] pb-2">Nghĩa Tiếng Việt</h4>
+            <div id="g1-col-meaning" class="space-y-3"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- Game 2 Area -->
+      <!-- Game 2 Area (Đổi thứ tự: Hanzi -> Pinyin -> Meaning) -->
       <div id="game2-area" class="hidden">
-        <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-          <div id="g2-col-pinyin" class="space-y-2"></div>
-          <div id="g2-col-meaning" class="space-y-2"></div>
-          <div id="g2-col-hanzi" class="space-y-2"></div>
+        <div class="grid grid-cols-3 gap-3 md:gap-6 text-center">
+          <div id="g2-col-hanzi" class="space-y-3"></div>
+          <div id="g2-col-pinyin" class="space-y-3"></div>
+          <div id="g2-col-meaning" class="space-y-3"></div>
         </div>
       </div>
 
       <!-- Game 3 Area -->
       <div id="game3-area" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div id="g3-col-audio" class="space-y-3"></div>
-          <div id="g3-col-hanzi" class="space-y-3"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
+          <div id="g3-col-audio" class="space-y-4"></div>
+          <div id="g3-col-hanzi" class="space-y-4"></div>
         </div>
       </div>
 
       <!-- Win Message -->
-      <div id="win-message" class="hidden text-center py-12">
-        <h2 class="text-3xl font-bold mb-4 text-[#5c3d2e]">🎉 ĐẠI CÔNG CÁO THÀNH!</h2>
-        <p class="text-lg mb-6">Bạn đã hoàn thành thử thách tu luyện này.</p>
-        <button onclick="showScreen('game-select-screen')" class="bg-[#b7906c] text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-[#8b5e34] transition">Chọn bài học khác</button>
+      <div id="win-message" class="hidden text-center py-16">
+        <h2 class="text-4xl font-bold mb-4 text-[#5c3d2e]">🎉 ĐẠI CÔNG CÁO THÀNH!</h2>
+        <p class="text-xl mb-8 italic">Bạn đã hoàn thành thử thách tu luyện này.</p>
+        <button onclick="showScreen('game-select-screen')" class="bg-[#b7906c] text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-[#8b5e34] transition shadow-lg">Tiếp tục tu luyện</button>
       </div>
     </div>
 
   </main>
 
   <!-- Footer 3 cột Cổ Phong -->
-  <footer class="w-full max-w-5xl mt-16 pt-8 border-t-2 border-[#b7906c]/40 text-sm">
+  <footer class="w-full max-w-5xl mt-16 pt-8 border-t-2 border-[#b7906c]/40 text-base">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-      
-      <!-- Cột Bên trái -->
       <div class="flex flex-col justify-center">
-        <h3 class="font-bold text-lg text-[#5c3d2e] mb-1">书馆 · CoBi</h3>
+        <h3 class="font-bold text-xl text-[#5c3d2e] mb-1">书馆 · CoBi</h3>
         <p class="italic text-[#7f5539]">Một ngày nhập Thư Quán, trọn đời hành Hán Ngữ.</p>
       </div>
-
-      <!-- Cột Ở giữa -->
-      <div class="flex flex-col justify-center space-y-1">
+      <div class="flex flex-col justify-center space-y-2">
         <p><span class="font-bold text-[#5c3d2e]">Địa chỉ:</span> K814 H83B/37 Trần Cao Vân, Thanh Khê, Đà Nẵng</p>
         <p><span class="font-bold text-[#5c3d2e]">Liên hệ:</span> 0905655413</p>
       </div>
-
-      <!-- Cột Bên phải -->
       <div class="flex flex-col justify-center items-center md:items-end">
-        <p class="mb-2 font-medium">Muốn tìm hiểu chương trình học tại CoBi?</p>
-        <a href="https://hanngucobi.wordpress.com/" target="_blank" rel="noopener noreferrer" class="inline-block bg-[#b7906c] hover:bg-[#8b5e34] text-white font-bold py-2 px-4 rounded transition shadow">
+        <p class="mb-3 font-medium">Muốn tìm hiểu chương trình học tại CoBi?</p>
+        <a href="https://hanngucobi.wordpress.com/" target="_blank" rel="noopener noreferrer" class="inline-block bg-[#b7906c] hover:bg-[#8b5e34] text-white font-bold py-2 px-6 rounded transition shadow">
           Xem thông tin khóa học →
         </a>
       </div>
-
     </div>
   </footer>
 
