@@ -5,10 +5,11 @@ let gameData = { lessons: [] }; // Dữ liệu tải từ Google Sheets
 
 // --- Xử lý Đăng Nhập & Tải Dữ Liệu ---
 window.onload = async function() {
-  if(localStorage.getItem('cobi_auth') === 'true') {
-    document.getElementById('login-screen').classList.add('hidden');
-    await loadGameData();
-  }
+  // Tạm thời tắt màn hình đăng nhập
+  document.getElementById('login-screen').classList.add('hidden');
+  
+  // Ép hệ thống gọi lệnh kết nối với Google Sheets ngay lập tức
+  await loadGameData();
 };
 
 async function checkLogin() {
