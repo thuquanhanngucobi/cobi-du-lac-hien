@@ -1,367 +1,131 @@
-// Dán Web App URL của Google Apps Script bạn vừa copy ở Bước 2 vào đây
-const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
-
-// Kiểm tra xem trình duyệt đã lưu phiên đăng nhập chưa
-window.onload = function() {
-  if(localStorage.getItem('cobi_auth') === 'true') {
-    document.getElementById('login-screen').classList.add('hidden');
+const app=document.getElementById('app'),toastEl=document.getElementById('toast');
+const EXAM={data:HSK4_DATA,section:'idle',studentName:'',timer:null,remaining:0,answers:{},submitted:false,audio:null,audioTimer:null,reviewMode:false,reviewDeadline:0};
+function goTop(){window.scrollTo({top:0,left:0,behavior:'auto'});document.documentElement.scrollTop=0;document.body.scrollTop=0}
+function setPhaseTimer(seconds,onEnd){clearTimers();EXAM.remaining=seconds;paintTimer();const deadline=Date.now()+seconds*1000;EXAM.timer=setInterval(()=>{EXAM.remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));paintTimer();if(EXAM.remaining<=0){clearInterval(EXAM.timer);EXAM.timer=null;onEnd()}},200);}
+const CENTER={address:'K814 H83B/37 Trần Cao Vân, Thanh Khê, Đà Nẵng',contact:'0905655413'};
+document.getElementById('center-address').textContent=CENTER.address;document.getElementById('center-contact').textContent=CENTER.contact;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const norm=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,'');
+function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('show'),3000)}
+function route(){let h=location.hash.slice(1)||'home';if(['practice','hsk4'].includes(h))renderPracticeHome();else if(h==='knowledge')placeholder('Kiến Thức','Từ vựng, ngữ pháp và kiến thức Hán Ngữ.');else if(h==='review')placeholder('Ôn tập','Ôn tập theo trình độ và chủ đề.');else renderHome();document.querySelectorAll('.main-nav a').forEach(a=>a.classList.toggle('active',a.dataset.route===h))}
+function placeholder(t,d){app.innerHTML=`<section class="page"><div class="section-title"><span class="cn">${esc(t)}</span><span class="vi">${esc(d)}</span></div><div class="card"><div class="notice">Khu vực này đã được giữ sẵn trong hệ thống Thư Quán.</div></div></section>`}
+function renderHome(){app.innerHTML=`<section class="page hero"><div><div class="hero-kicker">漢 · 書 · 語 · 學</div><h1><span class="hero-vn">Thư Quán Hán Ngữ</span> <span class="hero-cobi">CoBi</span></h1><h2>一朝入书馆，一生伴汉语</h2><p>Một ngày nhập Thư Quán, trọn đời hành Hán Ngữ.</p><div class="hero-ornament">— ❖ —</div></div></section><section class="page" style="padding-top:0"><div class="section-title"><span class="cn">入馆三卷</span><span class="vi">Ba không gian học tập của Thư Quán</span></div><div class="card-grid"><a class="card menu-card" href="#knowledge"><div class="symbol">知</div><h3>Kiến Thức</h3><p>Từ vựng, ngữ pháp, cấu trúc câu.</p></a><a class="card menu-card" href="#review"><div class="symbol">习</div><h3>Ôn tập</h3><p>Ôn lại kiến thức theo trình độ.</p></a><a class="card menu-card" href="#practice"><div class="symbol">试</div><h3>Luyện đề</h3><p>Luyện đề HSK1–HSK6.</p></a></div></section>`}
+function renderPracticeHome(){app.innerHTML=`<section class="page"><div class="section-title"><span class="cn">HSK4 模拟考试</span><span class="vi">Luyện đề HSK4 · 第01套</span></div><div class="notice"><strong>听力:</strong> thời gian đúng bằng độ dài audio. <strong>阅读:</strong> 40 phút. <strong>书写:</strong> 25 phút. <strong>检查:</strong> 5 phút.</div><div class="card-grid"><div class="card"><h3>听力 · 45题</h3><p>判断正误 + ABCD.</p></div><div class="card"><h3>阅读 · 40题</h3><p>选词填空 + 排列顺序 + 阅读理解.</p></div><div class="card"><h3>书写 · 15题</h3><p>86–95 tự chấm; 96–100 giáo viên chấm.</p></div></div><div class="card start-card"><label><strong>姓名 · Họ tên học viên</strong></label><input id="student-name" placeholder="Nhập họ tên"><button class="btn red" id="start-exam">开始考试 · Bắt đầu</button></div></section>`;document.getElementById('start-exam').onclick=startExam}
+function allQuestions(){return [...EXAM.data.listening,...EXAM.data.reading,...EXAM.data.writingOrder,...EXAM.data.writingPicture]}
+function sectionQuestions(section){if(section==='listening')return EXAM.data.listening;if(section==='reading')return EXAM.data.reading;if(section==='writing')return [...EXAM.data.writingOrder,...EXAM.data.writingPicture];return allQuestions()}
+function questionSection(id){if(id<=45)return'listening';if(id<=85)return'reading';return'writing'}
+function isDone(q){return EXAM.answers[q.id]!==undefined&&String(EXAM.answers[q.id]).trim()!==''}
+function startExam(){let n=document.getElementById('student-name').value.trim();if(!n)return toast('Vui lòng nhập họ tên học viên.');EXAM.studentName=n;EXAM.answers={};EXAM.submitted=false;EXAM.section='listening';renderListening()}
+function clearTimers(){clearInterval(EXAM.timer);clearInterval(EXAM.audioTimer);EXAM.timer=null;EXAM.audioTimer=null}
+function startClock(seconds,onEnd){setPhaseTimer(seconds,onEnd)}
+function startAudioClock(){clearInterval(EXAM.audioTimer);EXAM.audioTimer=setInterval(()=>{if(EXAM.audio&&!EXAM.audio.paused&&isFinite(EXAM.audio.duration)){EXAM.remaining=Math.max(0,Math.ceil(EXAM.audio.duration-EXAM.audio.currentTime));paintTimer()}},250)}
+function paintTimer(){let e=document.getElementById('timer');if(!e)return;let s=Math.max(0,EXAM.remaining),m=Math.floor(s/60),r=s%60;e.textContent=`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;e.classList.toggle('warning',s<=60)}
+function shell(title,sub,qs){app.innerHTML=`<div class="practice-shell"><div class="practice-top"><div class="practice-top-row"><div><div class="exam-title">${esc(EXAM.data.meta.title)}</div><div class="subhead">${esc(title)} · ${esc(sub)}</div></div><div class="timer" id="timer">00:00</div></div><div class="progress-line"><div class="progress-fill" id="progress-fill"></div></div></div><div class="exam-layout"><main class="exam-main" id="exam-main"></main><aside class="reading-nav"><h3>答题卡</h3><div class="legend"><span class="dot green"></span> Đã làm <span class="dot red"></span> Chưa làm</div><div class="palette" id="palette"></div></aside></div></div>`;renderPalette();updateProgress()}
+function renderListening(reviewMode=false){
+  if(!reviewMode) clearTimers();
+  goTop();
+  EXAM.section='listening'; EXAM.reviewMode=reviewMode;
+  shell(reviewMode?'检查答案 · 听力':'听力','Nghe'+(reviewMode?' · Rà soát':' · Audio'),EXAM.data.listening);
+  const main=document.getElementById('exam-main');
+  if(!reviewMode){
+    const audio=document.createElement('audio'); audio.id='listening-audio'; audio.src=EXAM.data.meta.listeningAudio; audio.preload='metadata'; audio.controls=false; audio.style.display='none';
+    audio.addEventListener('loadedmetadata',()=>{if(isFinite(audio.duration)&&audio.duration>0){EXAM.remaining=Math.ceil(audio.duration);paintTimer();startAudioClock()}});
+    audio.addEventListener('timeupdate',()=>{if(isFinite(audio.duration)&&audio.duration>0){EXAM.remaining=Math.max(0,Math.ceil(audio.duration-audio.currentTime));paintTimer()}});
+    audio.addEventListener('ended',endListening);
+    audio.addEventListener('error',()=>toast('Không đọc được audio. Kiểm tra file audio/hsk4/test01.mp3.'));
+    main.appendChild(audio); EXAM.audio=audio; audio.play().catch(()=>toast('Nếu trình duyệt chặn tự phát audio, hãy cho phép âm thanh rồi mở lại bài.'));
   }
-};
-
-async function checkLogin() {
-  const pass = document.getElementById('pass-input').value.trim();
-  const errorText = document.getElementById('login-error');
-  const btn = document.getElementById('login-btn');
-
-  if(!pass) return;
-
-  // Hiển thị trạng thái đang tải
-  btn.innerText = "Đang kiểm tra...";
-  btn.disabled = true;
-  errorText.classList.add('hidden');
-
-  try {
-    const response = await fetch(API_URL + "?pass=" + encodeURIComponent(pass));
-    const data = await response.json();
-
-    if(data.status === "ok") {
-      // Đăng nhập thành công, lưu lại trạng thái vào trình duyệt
-      localStorage.setItem('cobi_auth', 'true');
-      document.getElementById('login-screen').classList.add('hidden');
-    } else if (data.status === "locked") {
-      errorText.innerText = "Lệnh bài đã bị khóa hoặc hết hạn.";
-      errorText.classList.remove('hidden');
-    } else {
-      errorText.innerText = "Lệnh bài không chính xác.";
-      errorText.classList.remove('hidden');
-    }
-  } catch (e) {
-    errorText.innerText = "Mất kết nối, vui lòng thử lại sau.";
-    errorText.classList.remove('hidden');
+  EXAM.data.listening.forEach(q=>main.appendChild(questionElement(q)));
+  if(reviewMode){
+    main.insertAdjacentHTML('beforeend',`<div class="action-row"><span></span><button class="btn secondary" id="back-review">← 回到检查答案 · Quay lại rà soát</button></div>`);
+    document.getElementById('back-review').onclick=renderReview;
+  }else{
+    main.insertAdjacentHTML('beforeend',`<div class="action-row"><span></span><button class="btn red" id="next-section">下一部分 → Sang 阅读</button></div>`);
+    document.getElementById('next-section').onclick=endListening;
   }
-
-  // Khôi phục nút bấm
-  btn.innerText = "Xác Nhận";
-  btn.disabled = false;
+  renderPalette(); updateProgress();
+  if(!reviewMode) setTimeout(()=>{if(EXAM.audio&&isFinite(EXAM.audio.duration)&&EXAM.audio.duration>0)startAudioClock()},500);
 }
-// Biến toàn cục để quản lý trạng thái game
-let currentMode = null; 
-let currentLevel = null; 
-let selectedG1 = null; 
-let selectedG2 = { pinyin: null, meaning: null, hanzi: null }; 
-let selectedG3 = { audio: null, hanzi: null }; 
-let matchedCount = 0; 
-let totalPairs = 0; 
-
-// --- Xử lý Âm thanh (Web Speech API) ---
-function speakChinese(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-CN'; 
-    utterance.rate = 0.8; 
-    window.speechSynthesis.speak(utterance);
-  } else {
-    console.warn("Trình duyệt không hỗ trợ phát âm.");
+function endListening(){if(EXAM.section!=='listening')return;clearTimers();if(EXAM.audio){EXAM.audio.pause();EXAM.audio.currentTime=0}EXAM.audio=null;renderReading()}
+function renderReading(reviewMode=false){
+  if(!reviewMode) clearTimers();
+  goTop();
+  EXAM.section='reading'; EXAM.reviewMode=reviewMode;
+  shell(reviewMode?'检查答案 · 阅读':'阅读','Đọc · '+(reviewMode?'Rà soát':'40 phút'),EXAM.data.reading);
+  const main=document.getElementById('exam-main');
+  const groups=[['第一部分 · 选词填空',EXAM.data.reading.filter(q=>q.id<=55)],['第二部分 · 排列顺序',EXAM.data.reading.filter(q=>q.id>=56&&q.id<=65)],['第三部分 · 阅读理解',EXAM.data.reading.filter(q=>q.id>=66)]];
+  groups.forEach(([title,qs])=>{main.insertAdjacentHTML('beforeend',`<div class="exam-section-heading"><span>${esc(title)}</span></div>`);qs.forEach(q=>main.appendChild(questionElement(q)))});
+  if(reviewMode){
+    main.insertAdjacentHTML('beforeend',`<div class="action-row"><span></span><button class="btn secondary" id="back-review">← 回到检查答案 · Quay lại rà soát</button></div>`);
+    document.getElementById('back-review').onclick=renderReview;
+  }else{
+    main.insertAdjacentHTML('beforeend',`<div class="action-row"><span></span><button class="btn red" id="next-writing">下一部分 → Sang 书写</button></div>`);
+    document.getElementById('next-writing').onclick=()=>renderWriting(false);
+    setPhaseTimer(40*60,()=>renderWriting(false));
   }
+  renderPalette(); updateProgress();
 }
-
-// --- Xử lý Chuyển đổi Màn hình ---
-function showScreen(screenId) {
-  ['mode-select-screen', 'level-select-screen', 'game-select-screen', 'game-play-screen'].forEach(id => {
-    document.getElementById(id).classList.add('hidden');
-  });
-  document.getElementById(screenId).classList.remove('hidden');
-}
-
-// --- Xử lý Chọn Chế độ ---
-function selectMode(mode) {
-  currentMode = mode;
-  const levelTitle = document.getElementById('level-title');
-  const levelList = document.getElementById('level-list');
-  levelList.innerHTML = ''; 
-
-  const modeData = gameData[mode];
-  if (!modeData) return;
-
-  levelTitle.innerText = mode === 'lessons' ? "Luyện Khí Tĩnh Thất - Chọn Bài Học" : "Cảnh Giới Tĩnh Thất - Chọn Cấp Độ HSK";
-
-  modeData.forEach((item, index) => {
-    const btn = document.createElement('button');
-    btn.className = "scroll-container p-5 text-left flex justify-between items-center hover:border-[#8b5e34] hover:shadow-md transition";
-    btn.onclick = () => selectLevel(index);
-    btn.innerHTML = `
-      <div>
-        <div class="font-bold text-xl">${item.title}</div>
-        <div class="text-sm text-[#7f5539] mt-1">${item.words.length} từ vựng</div>
-      </div>
-      <span class="text-[#8b5e34] text-2xl font-bold">→</span>
-    `;
-    levelList.appendChild(btn);
-  });
-  showScreen('level-select-screen');
-}
-
-// --- Xử lý Chọn Bài ---
-function selectLevel(index) {
-  currentLevel = gameData[currentMode][index];
-  document.getElementById('selected-level-name').innerText = currentLevel.title;
-  
-  const btnGame3 = document.getElementById('btn-game-3');
-  const hasSentences = currentLevel.sentences && currentLevel.sentences.length > 0;
-  
-  if (hasSentences) {
-    btnGame3.classList.remove('opacity-50', 'pointer-events-none');
-    btnGame3.title = "Luyện nghe và nối câu tiếng Trung.";
-  } else {
-    btnGame3.classList.add('opacity-50', 'pointer-events-none');
-    btnGame3.title = "Bài học này chưa có dữ liệu câu.";
+function renderWriting(reviewMode=false){
+  if(!reviewMode) clearTimers();
+  goTop();
+  EXAM.section='writing'; EXAM.reviewMode=reviewMode;
+  shell(reviewMode?'检查答案 · 书写':'书写','Viết · '+(reviewMode?'Rà soát':'25 phút'),sectionQuestions('writing'));
+  const main=document.getElementById('exam-main');
+  main.insertAdjacentHTML('beforeend',`<div class="exam-section-heading"><span>第一部分 · 完成句子</span></div>`);
+  EXAM.data.writingOrder.forEach(q=>main.appendChild(questionElement(q)));
+  main.insertAdjacentHTML('beforeend',`<div class="exam-section-heading"><span>第二部分 · 看图，用词造句</span></div><div class="shared-writing-image"><img src="${esc(EXAM.data.meta.writingPicture)}" alt="HSK4 96–100"><p>第96–100题共用此图</p></div>`);
+  EXAM.data.writingPicture.forEach(q=>main.appendChild(questionElement(q)));
+  if(reviewMode){
+    main.insertAdjacentHTML('beforeend',`<div class="action-row"><span></span><button class="btn secondary" id="back-review">← 回到检查答案 · Quay lại rà soát</button></div>`);
+    document.getElementById('back-review').onclick=renderReview;
+  }else{
+    main.insertAdjacentHTML('beforeend',`<div class="action-row"><span></span><button class="btn red" id="next-review">检查答案 → 进入 5 分钟 rà soát</button></div>`);
+    document.getElementById('next-review').onclick=startReview;
+    setPhaseTimer(25*60,startReview);
   }
-
-  showScreen('game-select-screen');
+  renderPalette(); updateProgress();
 }
-
-function startGame(gameNumber) {
-  showScreen('game-play-screen');
-  document.getElementById('win-message').classList.add('hidden');
-  ['game1-area', 'game2-area', 'game3-area'].forEach(id => document.getElementById(id).classList.add('hidden'));
-  matchedCount = 0; 
-  if (gameNumber === 1) initGame1();
-  else if (gameNumber === 2) initGame2();
-  else if (gameNumber === 3) initGame3();
+function startReview(){
+  if(EXAM.section==='review')return;
+  goTop();
+  clearTimers();
+  if(EXAM.audio)EXAM.audio.pause();
+  EXAM.audio=null; EXAM.section='review'; EXAM.reviewMode=false;
+  EXAM.reviewDeadline=Date.now()+EXAM.data.meta.reviewMinutes*60*1000;
+  renderReview();
 }
-
-// ==============================================================================
-// ==================== GAME 1: LINH THẠCH GHÉP CẶP (Chia 2 Cột) ================
-// ==============================================================================
-function initGame1() {
-  document.getElementById('game1-area').classList.remove('hidden');
-  document.getElementById('game-status').innerText = "Game 1: Ghép Hán tự & Nghĩa";
-  
-  const colHanzi = document.getElementById('g1-col-hanzi');
-  const colMeaning = document.getElementById('g1-col-meaning');
-  colHanzi.innerHTML = '';
-  colMeaning.innerHTML = '';
-  selectedG1 = null;
-
-  let hanziCards = [];
-  let meaningCards = [];
-
-  currentLevel.words.forEach((w, idx) => {
-    hanziCards.push({ id: idx, type: 'hanzi', content: w.hanzi, word: w });
-    meaningCards.push({ id: idx, type: 'meaning', content: w.meaning, word: w });
-  });
-
-  // Trộn bài độc lập cho mỗi cột
-  hanziCards.sort(() => Math.random() - 0.5);
-  meaningCards.sort(() => Math.random() - 0.5);
-  totalPairs = currentLevel.words.length;
-
-  hanziCards.forEach(card => colHanzi.appendChild(createG1Btn(card)));
-  meaningCards.forEach(card => colMeaning.appendChild(createG1Btn(card)));
+function questionElement(q){const c=document.createElement('article');c.className='question-card';c.id='q-'+q.id;let body='';if(q.type==='tf'){body=`<div class="statement">★ ${esc(q.statement)}</div>${options(q,q.options)}`}else if(q.type==='mcq'){body=options(q,q.options)}else if(q.type==='cloze'){body=(q.example?`<div class="example"><strong>例如：</strong>${esc(q.example)}</div>`:'')+`<div class="cloze-text">${esc(q.question)}</div>${options(q,q.options)}`}else if(q.type==='order'){const keys=Array.isArray(q.parts)?q.parts.map((_,i)=>String.fromCharCode(65+i)):Object.keys(q.parts);const labels=Array.isArray(q.parts)?q.parts:Object.values(q.parts);const saved=String(EXAM.answers[q.id]||'').split('').filter(Boolean);const ordered=saved.length?saved:keys;body=`<div class="order-parts">${labels.map((v,i)=>`<div class="order-part"><b>${keys[i]}</b><span>${esc(v)}</span></div>`).join('')}</div><p class="drag-hint">拖动下方字母排列顺序 · Có thể kéo thả hoặc bấm để đổi vị trí</p><div class="order-builder" data-order="${q.id}">${ordered.map(k=>`<button type="button" class="order-token" draggable="true" data-token="${k}">${k}</button>`).join('')}</div><input type="hidden" class="answer-input" data-answer="${q.id}" value="${esc(ordered.join(''))}">`}else if(q.type==='reading'){body=`<div class="passage">${esc(q.passage)}</div><div class="question-text">${esc(q.question)}</div>${options(q,q.options)}`}else if(q.type==='picture'){body=`<div class="picture-instruction">看图，用词“<strong>${esc(q.word)}</strong>”造句</div><input class="answer-input picture-answer" data-answer="${q.id}" value="${esc(EXAM.answers[q.id]||'')}" placeholder="请输入句子">`};c.innerHTML=`<div class="q-head"><span class="q-number">第 ${q.id} 题</span><span class="q-type">${typeName(q.type)}</span></div>${body}`;c.querySelectorAll('input[type=radio]').forEach(r=>r.onchange=()=>setAnswer(q.id,r.value));c.querySelectorAll('.answer-input:not([type=hidden])').forEach(i=>i.oninput=()=>setAnswer(q.id,i.value));const builder=c.querySelector('.order-builder');if(builder){let dragged=null;const sync=()=>{const order=[...builder.querySelectorAll('.order-token')].map(b=>b.dataset.token).join('');const input=c.querySelector('.answer-input');input.value=order;setAnswer(q.id,order)};builder.querySelectorAll('.order-token').forEach(btn=>{btn.addEventListener('dragstart',e=>{dragged=btn;btn.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',btn.dataset.token)});btn.addEventListener('dragend',()=>{dragged=null;btn.classList.remove('dragging');builder.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'))});btn.addEventListener('dragover',e=>{e.preventDefault();btn.classList.add('drag-over');e.dataTransfer.dropEffect='move'});btn.addEventListener('dragleave',()=>btn.classList.remove('drag-over'));btn.addEventListener('drop',e=>{e.preventDefault();btn.classList.remove('drag-over');if(!dragged||dragged===btn)return;const rect=btn.getBoundingClientRect();builder.insertBefore(dragged,e.clientX>rect.left+rect.width/2?btn.nextSibling:btn);sync()});btn.addEventListener('click',()=>{const arr=[...builder.querySelectorAll('.order-token')];const idx=arr.indexOf(btn);if(idx>0){builder.insertBefore(btn,arr[idx-1]);sync()}else if(arr.length>1){builder.appendChild(btn);sync()}})})}return c}
+function typeName(t){return({tf:'判断正误',mcq:'选择题',cloze:'选词填空',reading:'阅读理解',order:'排列顺序',picture:'看图写句'})[t]||''}
+function options(q,o){return `<div class="options">${Object.entries(o).map(([k,v])=>`<label class="option"><input type="radio" name="q-${q.id}" value="${k}" ${EXAM.answers[q.id]===k?'checked':''}><span><b>${k}.</b> ${esc(v)}</span></label>`).join('')}</div>`}
+function setAnswer(id,v){EXAM.answers[id]=v;renderPalette();updateProgress()}
+function renderPalette(){let e=document.getElementById('palette');if(!e)return;let qs=sectionQuestions(EXAM.section);e.innerHTML=qs.map(q=>`<button class="${isDone(q)?'done':''}" data-jump="${q.id}">${q.id}</button>`).join('');e.querySelectorAll('button').forEach(b=>b.onclick=()=>jumpToQuestion(Number(b.dataset.jump)))}
+function jumpToQuestion(id){
+  const sec=questionSection(id);
+  if(EXAM.section===sec && !EXAM.reviewMode){document.getElementById('q-'+id)?.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  if(EXAM.section!=='review'){toast('Câu này thuộc phần khác.');return;}
+  if(Date.now()>=EXAM.reviewDeadline){submitExam();return;}
+  if(sec==='listening')renderListening(true);else if(sec==='reading')renderReading(true);else renderWriting(true);
+  setTimeout(()=>document.getElementById('q-'+id)?.scrollIntoView({behavior:'auto',block:'start'}),80);
 }
-
-function createG1Btn(card) {
-  const btn = document.createElement('button');
-  // Styling lớn, rõ ràng dễ đọc
-  btn.className = "w-full scroll-container p-4 text-xl md:text-2xl font-bold flex items-center justify-center min-h-[90px] text-center hover:scale-[1.02] hover:border-[#8b5e34] transition-all duration-200";
-  btn.innerText = card.content;
-  btn.onclick = () => handleG1Click(btn, card);
-  return btn;
+function updateProgress(){let e=document.getElementById('progress-fill');if(!e)return;let qs=sectionQuestions(EXAM.section);e.style.width=qs.length?`${qs.filter(isDone).length/qs.length*100}%`:'0%'}
+function renderReview(){
+  clearTimers();
+  goTop();
+  EXAM.section='review'; EXAM.reviewMode=false;
+  let qs=allQuestions(),un=qs.filter(q=>!isDone(q));
+  app.innerHTML=`<section class="page"><div class="review-top"><div class="section-title"><span class="cn">检查答案</span><span class="vi">Rà soát · còn ${un.length} câu chưa làm</span></div><div class="review-timer" id="review-timer">05:00</div></div><div class="card"><p><b class="green-text">Xanh</b> = đã làm · <b class="red-text">Đỏ</b> = chưa làm. Bấm số câu để xem và sửa đáp án.</p><div class="palette review-palette">${qs.map(q=>`<button class="${isDone(q)?'done':''}" data-jump="${q.id}">${q.id}</button>`).join('')}</div></div><div class="card"><button class="btn red" id="submit-now">提交答案 · Nộp bài ngay</button></div></section>`;
+  document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpToQuestion(Number(b.dataset.jump)));
+  document.getElementById('submit-now').onclick=submitExam;
+  EXAM.remaining=Math.max(0,Math.ceil((EXAM.reviewDeadline-Date.now())/1000));
+  paintReviewTimer();
+  EXAM.timer=setInterval(()=>{EXAM.remaining=Math.max(0,Math.ceil((EXAM.reviewDeadline-Date.now())/1000));paintReviewTimer();if(EXAM.remaining<=0){clearTimers();submitExam()}},200);
 }
-
-function handleG1Click(btn, card) {
-  if (card.type === 'hanzi') speakChinese(card.word.hanzi);
-  
-  if (!selectedG1) {
-    selectedG1 = { btn, card };
-    btn.classList.add('selected');
-  } else {
-    if (selectedG1.btn === btn) {
-      btn.classList.remove('selected');
-      selectedG1 = null;
-      return;
-    }
-    // Check match
-    if (selectedG1.card.id === card.id && selectedG1.card.type !== card.type) {
-      btn.classList.add('matched');
-      selectedG1.btn.classList.add('matched');
-      matchedCount++;
-      if (matchedCount === totalPairs) checkWin();
-    } else {
-      selectedG1.btn.classList.remove('selected');
-    }
-    selectedG1 = null; 
-  }
-}
-
-// ==============================================================================
-// ====================== GAME 2: TAM BẢO NỐI TỪ (Hán -> Pinyin -> Nghĩa) =======
-// ==============================================================================
-function initGame2() {
-  document.getElementById('game2-area').classList.remove('hidden');
-  document.getElementById('game-status').innerText = "Game 2: Nối Hán tự - Pinyin - Nghĩa";
-  
-  selectedG2 = { pinyin: null, meaning: null, hanzi: null }; 
-  totalPairs = currentLevel.words.length;
-
-  const colHanzi = document.getElementById('g2-col-hanzi');
-  const colPinyin = document.getElementById('g2-col-pinyin');
-  const colMeaning = document.getElementById('g2-col-meaning');
-
-  colHanzi.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Hán Tự</h4>';
-  colPinyin.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Pinyin</h4>';
-  colMeaning.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Nghĩa</h4>';
-
-  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
-
-  shuffle(currentLevel.words).forEach(w => colHanzi.appendChild(createG2Btn(w.hanzi, 'hanzi', w)));
-  shuffle(currentLevel.words).forEach(w => colPinyin.appendChild(createG2Btn(w.pinyin, 'pinyin', w)));
-  shuffle(currentLevel.words).forEach(w => colMeaning.appendChild(createG2Btn(w.meaning, 'meaning', w)));
-}
-
-function createG2Btn(text, type, word) {
-  const btn = document.createElement('button');
-  btn.className = `w-full scroll-container p-3 text-base md:text-lg font-semibold hover:border-[#8b5e34] transition`;
-  if (type === 'hanzi') btn.classList.add('text-xl'); // Chữ hán cho to hơn 1 chút
-  btn.innerText = text;
-  
-  btn.onclick = () => {
-    if (type === 'hanzi') speakChinese(word.hanzi);
-
-    if (selectedG2[type]) selectedG2[type].btn.classList.remove('selected');
-
-    selectedG2[type] = { btn, word };
-    btn.classList.add('selected');
-
-    if (selectedG2.pinyin && selectedG2.meaning && selectedG2.hanzi) {
-      if (selectedG2.pinyin.word.hanzi === selectedG2.meaning.word.hanzi && 
-          selectedG2.meaning.word.hanzi === selectedG2.hanzi.word.hanzi) {
-        
-        selectedG2.pinyin.btn.classList.add('matched');
-        selectedG2.meaning.btn.classList.add('matched');
-        selectedG2.hanzi.btn.classList.add('matched');
-        matchedCount++;
-        if (matchedCount === totalPairs) checkWin();
-      } else {
-        selectedG2.pinyin.btn.classList.remove('selected');
-        selectedG2.meaning.btn.classList.remove('selected');
-        selectedG2.hanzi.btn.classList.remove('selected');
-      }
-      selectedG2 = { pinyin: null, meaning: null, hanzi: null };
-    }
-  };
-  return btn;
-}
-
-// ==============================================================================
-// ====================== GAME 3: THÍNH ÂM TẦM CÂU (Lọc Audio & Xoá Pinyin) =====
-// ==============================================================================
-
-// Hàm cực kỳ quan trọng: Lọc riêng tiếng Trung để loa đọc và bỏ Pinyin hiển thị
-function parseG3Sentence(rawText) {
-  // 1. Lọc lấy Hán Tự & số để Audio đọc (Bỏ qua tiếng Việt/Pinyin)
-  const chineseMatches = rawText.match(/[\u4e00-\u9fa5，。！？、0-9]+/g);
-  const chineseOnly = chineseMatches ? chineseMatches.join('') : rawText;
-
-  // 2. Lọc bỏ Pinyin để làm text hiển thị gọn gàng
-  let display = rawText;
-  
-  // Xử lý form: "Wǒ jiào Kǎmǎlā. (我叫卡玛拉。) - Tôi tên là Kamala."
-  const matchPinyinFirst = rawText.match(/^(.*?)[\(（]([\u4e00-\u9fa5，。！？、0-9]+)[\)）](.*)$/);
-  if (matchPinyinFirst) {
-    display = matchPinyinFirst[2] + matchPinyinFirst[3]; // Gộp Hán tự và Nghĩa
-  } else {
-    // Nếu ko có ngoặc mà Pinyin đứng đầu (dấu hiệu: chữ latin đứng trước Hán tự)
-    const firstHanzi = rawText.search(/[\u4e00-\u9fa5]/);
-    if (firstHanzi > 0) {
-      const beforeStr = rawText.substring(0, firstHanzi);
-      if (/[a-zA-Z]/.test(beforeStr)) {
-        display = rawText.substring(firstHanzi); // Cắt bỏ đoạn latin phía trước
-      }
-    }
-  }
-
-  // Dọn dẹp các dấu gạch ngang/ngoặc thừa ở đầu câu sau khi cắt
-  display = display.replace(/^[\)）\s\-]+/, '');
-  // Dọn dẹp pinyin lọt thỏm trong ngoặc ở cuối câu VD: "我20岁 (wǒ èrshí suì)"
-  display = display.replace(/[\(（][a-zA-Z\s\dōōóòǒōāáǎàēéěèīíǐìūúǔùǖǘǚǜü]+[\)）]/g, '');
-
-  return { chineseOnly, display };
-}
-
-function initGame3() {
-  document.getElementById('game3-area').classList.remove('hidden');
-  document.getElementById('game-status').innerText = "Game 3: Nghe Audio và nối Hán tự";
-
-  selectedG3 = { audio: null, hanzi: null }; 
-  const sentences = currentLevel.sentences || [];
-  totalPairs = sentences.length;
-
-  const colAudio = document.getElementById('g3-col-audio');
-  const colHanzi = document.getElementById('g3-col-hanzi');
-
-  colAudio.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Phát Âm Tiếng Trung</h4>';
-  colHanzi.innerHTML = '<h4 class="font-bold text-lg md:text-xl mb-4 border-b-2 border-[#b7906c] pb-2 text-[#5c3d2e]">Câu Hán Tự & Nghĩa</h4>';
-
-  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
-
-  shuffle(sentences).forEach((s, idx) => {
-    const parsed = parseG3Sentence(s.hanzi);
-    
-    // Nút Audio (Trái)
-    const btn = document.createElement('button');
-    btn.className = "w-full scroll-container p-6 text-center text-xl font-bold flex items-center justify-center hover:border-[#8b5e34] transition";
-    btn.innerHTML = `<span class="mr-2 text-2xl">🔊</span> Câu ${idx + 1}`; 
-    
-    btn.onclick = () => {
-      speakChinese(parsed.chineseOnly); // CHỈ đọc phần tiếng Trung đã trích xuất
-      
-      if (selectedG3.audio) selectedG3.audio.btn.classList.remove('selected');
-      selectedG3.audio = { btn, sentence: s };
-      btn.classList.add('selected');
-      checkG3Match(); 
-    };
-    colAudio.appendChild(btn);
-  });
-
-  shuffle(sentences).forEach(s => {
-    const parsed = parseG3Sentence(s.hanzi);
-
-    // Nút Hiển thị chữ (Phải)
-    const btn = document.createElement('button');
-    btn.className = "w-full scroll-container p-5 text-left text-lg font-semibold hover:border-[#8b5e34] transition leading-relaxed";
-    btn.innerText = parsed.display; // CHỈ hiển thị Hán Tự và Nghĩa, xoá Pinyin rườm rà
-    
-    btn.onclick = () => {
-      if (selectedG3.hanzi) selectedG3.hanzi.btn.classList.remove('selected');
-      selectedG3.hanzi = { btn, sentence: s };
-      btn.classList.add('selected');
-      checkG3Match(); 
-    };
-    colHanzi.appendChild(btn);
-  });
-}
-
-function checkG3Match() {
-  if (selectedG3.audio && selectedG3.hanzi) {
-    if (selectedG3.audio.sentence.hanzi === selectedG3.hanzi.sentence.hanzi) {
-      selectedG3.audio.btn.classList.add('matched');
-      selectedG3.hanzi.btn.classList.add('matched');
-      matchedCount++;
-      if (matchedCount === totalPairs) checkWin();
-    } else {
-      selectedG3.audio.btn.classList.remove('selected');
-      selectedG3.hanzi.btn.classList.remove('selected');
-    }
-    selectedG3 = { audio: null, hanzi: null };
-  }
-}
-
-// --- Xử lý Chiến thắng ---
-function checkWin() {
-  setTimeout(() => {
-    ['game1-area', 'game2-area', 'game3-area'].forEach(id => document.getElementById(id).classList.add('hidden'));
-    document.getElementById('win-message').classList.remove('hidden');
-  }, 600);
-}
+function paintReviewTimer(){const el=document.getElementById('review-timer');if(el){el.textContent=formatTime(EXAM.remaining);el.classList.toggle('warning',EXAM.remaining<=60)}}
+function formatTime(s){s=Math.max(0,Math.ceil(s));return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+function submitExam(){if(EXAM.submitted)return;EXAM.submitted=true;clearTimers();if(EXAM.audio)EXAM.audio.pause();let r=calculateResult();saveResultLocally(r);renderResult(r);sendResultToGoogleSheets(r)}
+function calculateResult(){let l=EXAM.data.listening,r=EXAM.data.reading,w=EXAM.data.writingOrder,p=EXAM.data.writingPicture;let lc=l.filter(q=>norm(EXAM.answers[q.id])===norm(q.answer)).length,rc=r.filter(q=>norm(EXAM.answers[q.id])===norm(q.answer)).length,wc=w.filter(q=>norm(EXAM.answers[q.id])===norm(q.answer)).length;let wrong=[...l,...r,...w].filter(q=>q.answer&&norm(EXAM.answers[q.id])!==norm(q.answer)).map(q=>({id:q.id,student:EXAM.answers[q.id]||'',correct:q.answer}));return{examId:EXAM.data.meta.title,level:EXAM.data.meta.level,studentName:EXAM.studentName,submittedAt:new Date().toISOString(),listeningCorrect:lc,listeningTotal:l.length,readingCorrect:rc,readingTotal:r.length,writingOrderCorrect:wc,writingOrderTotal:w.length,pictureAnswered:p.filter(isDone).length,pictureTotal:p.length,autoScore:+(lc*2.22+rc*2.5+wc*6).toFixed(2),wrong,answers:{...EXAM.answers}}}
+function renderResult(r){app.innerHTML=`<section class="page"><div class="result-box"><div class="section-title"><span class="cn">考试结果</span><span class="vi">Kết quả luyện đề</span></div><div class="score-big">${r.autoScore}</div><p class="result-note">Học viên: <b>${esc(r.studentName)}</b><br>Điểm tự động, chưa gồm điểm 96–100 do giáo viên chấm.</p><table class="score-table"><tr><th>Phần</th><th>Đúng</th><th>Điểm</th></tr><tr><td>Nghe</td><td>${r.listeningCorrect}/${r.listeningTotal}</td><td>${(r.listeningCorrect*2.22).toFixed(2)}</td></tr><tr><td>Đọc</td><td>${r.readingCorrect}/${r.readingTotal}</td><td>${(r.readingCorrect*2.5).toFixed(2)}</td></tr><tr><td>Viết 86–95</td><td>${r.writingOrderCorrect}/${r.writingOrderTotal}</td><td>${(r.writingOrderCorrect*6).toFixed(2)}</td></tr><tr><td>Viết 96–100</td><td>${r.pictureAnswered}/${r.pictureTotal}</td><td>GV chấm</td></tr></table><h3>Câu sai / chưa làm</h3><div class="wrong-list">${r.wrong.length?r.wrong.map(w=>`<div class="wrong-item"><b>Câu ${w.id}</b> · Bạn: <code>${esc(w.student||'Chưa làm')}</code> · Đáp án: <code>${esc(w.correct)}</code></div>`).join(''):'Không có câu sai ở phần tự chấm.'}</div><div class="notice">${GOOGLE_SHEETS_WEB_APP_URL?'Kết quả đã được gửi lên Google Sheets.':''}</div><a class="btn secondary" href="#practice">Làm lại</a></div></section>`}
+const GOOGLE_SHEETS_WEB_APP_URL='https://script.google.com/macros/s/AKfycbwotWNfwoNDMZWABbdifr5KGD05Qb3E0Txp-TOETXoP48Yb-v91zciX0VdMgzzUlWoXLw/exec'; // Dán Web App URL của Google Apps Script vào đây sau khi triển khai
+function saveResultLocally(r){try{const key='cobi_hsk_results';const old=JSON.parse(localStorage.getItem(key)||'[]');old.push(r);localStorage.setItem(key,JSON.stringify(old));}catch(e){console.warn('Không lưu được localStorage',e)}}
+function sendResultToGoogleSheets(r){if(!GOOGLE_SHEETS_WEB_APP_URL)return;const payload={...r,answers:JSON.stringify(r.answers),wrong:JSON.stringify(r.wrong)};fetch(GOOGLE_SHEETS_WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(()=>toast('Đã gửi kết quả lên Google Sheets.')).catch(()=>toast('Không gửi được Google Sheets; kết quả vẫn được lưu trên máy.'))}
+window.addEventListener('hashchange',route);route();
