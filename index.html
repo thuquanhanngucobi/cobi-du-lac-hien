@@ -44,7 +44,21 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-8">
-
+<!-- Màn hình Nhập Môn (Đăng Nhập) -->
+  <div id="login-screen" class="fixed inset-0 bg-[#fefae0] z-50 flex items-center justify-center p-4">
+    <div class="scroll-container p-8 max-w-md w-full text-center relative overflow-hidden">
+      <!-- Decor quạt chìm -->
+      <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/quat.png" class="absolute -right-10 -bottom-10 h-32 opacity-20 pointer-events-none">
+      
+      <h2 class="text-3xl font-bold mb-2 text-[#5c3d2e]">Nhập Môn Thư Quán</h2>
+      <p class="text-[#7f5539] mb-6 italic">Xin vui lòng xuất trình lệnh bài để bắt đầu tu luyện.</p>
+      
+      <input type="text" id="pass-input" placeholder="Nhập mã học viên..." class="w-full p-4 mb-4 border-2 border-[#b7906c] rounded bg-[#fcf6e8] text-[#5c3d2e] font-bold text-center focus:outline-none focus:border-[#8b5e34]">
+      
+      <button onclick="checkLogin()" id="login-btn" class="w-full bg-[#b7906c] text-white font-bold py-3 px-4 rounded transition hover:bg-[#8b5e34] shadow-md">Xác Nhận</button>
+      <p id="login-error" class="text-red-600 mt-4 font-semibold hidden"></p>
+    </div>
+  </div>
   <!-- Header -->
   <header class="w-full max-w-5xl flex flex-col items-center mb-10 relative">
     <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/denlong.png" alt="Đèn lồng" class="absolute left-0 top-0 h-28 md:h-36 lantern hidden sm:block">
