@@ -1,3 +1,49 @@
+// Dán Web App URL của Google Apps Script bạn vừa copy ở Bước 2 vào đây
+const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
+
+// Kiểm tra xem trình duyệt đã lưu phiên đăng nhập chưa
+window.onload = function() {
+  if(localStorage.getItem('cobi_auth') === 'true') {
+    document.getElementById('login-screen').classList.add('hidden');
+  }
+};
+
+async function checkLogin() {
+  const pass = document.getElementById('pass-input').value.trim();
+  const errorText = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  if(!pass) return;
+
+  // Hiển thị trạng thái đang tải
+  btn.innerText = "Đang kiểm tra...";
+  btn.disabled = true;
+  errorText.classList.add('hidden');
+
+  try {
+    const response = await fetch(API_URL + "?pass=" + encodeURIComponent(pass));
+    const data = await response.json();
+
+    if(data.status === "ok") {
+      // Đăng nhập thành công, lưu lại trạng thái vào trình duyệt
+      localStorage.setItem('cobi_auth', 'true');
+      document.getElementById('login-screen').classList.add('hidden');
+    } else if (data.status === "locked") {
+      errorText.innerText = "Lệnh bài đã bị khóa hoặc hết hạn.";
+      errorText.classList.remove('hidden');
+    } else {
+      errorText.innerText = "Lệnh bài không chính xác.";
+      errorText.classList.remove('hidden');
+    }
+  } catch (e) {
+    errorText.innerText = "Mất kết nối, vui lòng thử lại sau.";
+    errorText.classList.remove('hidden');
+  }
+
+  // Khôi phục nút bấm
+  btn.innerText = "Xác Nhận";
+  btn.disabled = false;
+}
 // Biến toàn cục để quản lý trạng thái game
 let currentMode = null; 
 let currentLevel = null; 
