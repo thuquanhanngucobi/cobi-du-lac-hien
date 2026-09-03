@@ -10,10 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
-      /* Kết hợp font Serif Tiếng Việt có chân và font Tiếng Trung */
       font-family: 'Lora', 'Noto Serif TC', serif;
-      background-color: #fefae0; /* Màu giấy cổ ngả vàng */
-      color: #7f5539; /* Màu chữ nâu đất sẫm (mệnh Kim) */
+      background-color: #fefae0; 
+      color: #7f5539; 
       line-height: 1.6;
     }
 
@@ -34,7 +33,6 @@
       visibility: hidden; 
     }
 
-    /* Hiệu ứng đung đưa đèn lồng */
     @keyframes sway {
       0% { transform: rotate(-2deg); }
       50% { transform: rotate(2deg); }
@@ -44,7 +42,8 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-8">
-<!-- Màn hình Nhập Môn (Đăng Nhập) -->
+
+  <!-- Màn hình Nhập Môn (Đăng Nhập) -->
   <div id="login-screen" class="fixed inset-0 bg-[#fefae0] z-50 flex items-center justify-center p-4">
     <div class="scroll-container p-8 max-w-md w-full text-center relative overflow-hidden">
       <!-- Decor quạt chìm -->
@@ -59,6 +58,7 @@
       <p id="login-error" class="text-red-600 mt-4 font-semibold hidden"></p>
     </div>
   </div>
+
   <!-- Header -->
   <header class="w-full max-w-5xl flex flex-col items-center mb-10 relative">
     <img src="https://raw.githubusercontent.com/thuquanhanngucobi/cobi-du-lac-hien/refs/heads/main/denlong.png" alt="Đèn lồng" class="absolute left-0 top-0 h-28 md:h-36 lantern hidden sm:block">
@@ -124,15 +124,13 @@
         <span id="game-status" class="text-xl font-bold text-[#5c3d2e]"></span>
       </div>
 
-      <!-- Game 1 Area (Tách 2 cột rõ ràng) -->
+      <!-- Game 1 Area -->
       <div id="game1-area" class="hidden">
         <div class="grid grid-cols-2 gap-4 md:gap-12">
-          <!-- Cột Hán Tự -->
           <div>
             <h4 class="font-bold text-xl mb-4 text-center text-[#5c3d2e] border-b-2 border-[#b7906c] pb-2">Hán Tự</h4>
             <div id="g1-col-hanzi" class="space-y-3"></div>
           </div>
-          <!-- Cột Nghĩa -->
           <div>
             <h4 class="font-bold text-xl mb-4 text-center text-[#5c3d2e] border-b-2 border-[#b7906c] pb-2">Nghĩa Tiếng Việt</h4>
             <div id="g1-col-meaning" class="space-y-3"></div>
@@ -140,7 +138,7 @@
         </div>
       </div>
 
-      <!-- Game 2 Area (Đổi thứ tự: Hanzi -> Pinyin -> Meaning) -->
+      <!-- Game 2 Area -->
       <div id="game2-area" class="hidden">
         <div class="grid grid-cols-3 gap-3 md:gap-6 text-center">
           <div id="g2-col-hanzi" class="space-y-3"></div>
