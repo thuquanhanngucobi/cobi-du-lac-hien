@@ -51,16 +51,33 @@ async function checkLogin() {
 // Fetch dữ liệu từ Google Sheets
 async function loadGameData() {
   document.getElementById('loading-screen').classList.remove('hidden');
+  
+  // Tạo cơ chế đếm giờ quá hạn (10 giây)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   try {
-    const response = await fetch(API_URL + "?action=getData");
+    const response = await fetch(API_URL + "?action=getData", {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
     const res = await response.json();
     if(res.status === "ok") {
       gameData.lessons = res.data;
       document.getElementById('loading-screen').classList.add('hidden');
       document.getElementById('mode-select-screen').classList.remove('hidden');
+    } else {
+      alert("Lỗi từ Tàng Kinh Các: " + (res.message || "Không rõ nguyên nhân"));
+      document.getElementById('loading-screen').classList.add('hidden');
     }
   } catch (e) {
-    alert("Lỗi tải dữ liệu. Vui lòng tải lại trang.");
+    document.getElementById('loading-screen').classList.add('hidden');
+    if (e.name === 'AbortError') {
+      alert("Kết nối quá hạn (Timeout)! Google Sheets phản hồi quá lâu hoặc link API chưa chính xác.");
+    } else {
+      alert("Lỗi kết nối mạng hoặc sai cấu trúc API. Hãy kiểm tra lại link API_URL.");
+    }
   }
 }
 
