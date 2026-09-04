@@ -1,16 +1,22 @@
 // ====== CẬP NHẬT WEB APP URL CỦA BẠN VÀO ĐÂY ======
 const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
 
-let gameData = { lessons: [] }; // Dữ liệu tải từ Google Sheets
+// Hàm tạo "Mã vân tay thiết bị" để chống share pass
+function getDeviceId() {
+  let deviceId = localStorage.getItem('cobi_device_id');
+  if (!deviceId) {
+    deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    localStorage.setItem('cobi_device_id', deviceId);
+  }
+  return deviceId;
+}
 
-// --- Xử lý Đăng Nhập & Tải Dữ Liệu ---
+// --- Xử lý Đăng Nhập ---
 window.onload = async function() {
-  // Nếu trình duyệt đã lưu trạng thái đăng nhập từ trước
   if(localStorage.getItem('cobi_auth') === 'true') {
     document.getElementById('login-screen').classList.add('hidden');
     await loadGameData();
   } else {
-    // Nếu chưa đăng nhập, bắt buộc hiện màn hình nhập pass
     document.getElementById('login-screen').classList.remove('hidden');
   }
 };
@@ -27,7 +33,8 @@ async function checkLogin() {
   errorText.classList.add('hidden');
 
   try {
-    const response = await fetch(API_URL + "?action=login&pass=" + encodeURIComponent(pass));
+    const deviceId = getDeviceId();
+    const response = await fetch(API_URL + "?action=login&pass=" + encodeURIComponent(pass) + "&deviceId=" + encodeURIComponent(deviceId));
     const data = await response.json();
 
     if(data.status === "ok") {
@@ -35,6 +42,9 @@ async function checkLogin() {
       localStorage.setItem('cobi_student_name', data.name);
       document.getElementById('login-screen').classList.add('hidden');
       await loadGameData(); 
+    } else if (data.status === "wrong_device") {
+      errorText.innerText = "Lệnh bài này đã được sử dụng trên một thiết bị khác.";
+      errorText.classList.remove('hidden');
     } else if (data.status === "locked") {
       errorText.innerText = "Lệnh bài đã bị khóa hoặc hết hạn.";
       errorText.classList.remove('hidden');
@@ -51,35 +61,34 @@ async function checkLogin() {
   btn.disabled = false;
 }
 
-// Fetch dữ liệu từ Google Sheets
+// --- Tải Dữ Liệu ---
+let gameData = { lessons: [] };
 async function loadGameData() {
-  document.getElementById('loading-screen').classList.remove('hidden');
+  const loadingScreen = document.getElementById('loading-screen');
+  loadingScreen.classList.remove('hidden');
   
-  // Tạo cơ chế đếm giờ quá hạn (10 giây)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
 
   try {
-    const response = await fetch(API_URL + "?action=getData", {
-      signal: controller.signal
-    });
+    const response = await fetch(API_URL + "?action=getData", { signal: controller.signal });
     clearTimeout(timeoutId);
     
     const res = await response.json();
     if(res.status === "ok") {
       gameData.lessons = res.data;
-      document.getElementById('loading-screen').classList.add('hidden');
+      loadingScreen.classList.add('hidden');
       document.getElementById('mode-select-screen').classList.remove('hidden');
     } else {
-      alert("Lỗi từ Tàng Kinh Các: " + (res.message || "Không rõ nguyên nhân"));
-      document.getElementById('loading-screen').classList.add('hidden');
+      alert("Lỗi từ Tàng Kinh Các: " + res.message);
+      loadingScreen.classList.add('hidden');
     }
   } catch (e) {
-    document.getElementById('loading-screen').classList.add('hidden');
+    loadingScreen.classList.add('hidden');
     if (e.name === 'AbortError') {
-      alert("Kết nối quá hạn (Timeout)! Google Sheets phản hồi quá lâu hoặc link API chưa chính xác.");
+      alert("Kết nối quá hạn! Vui lòng làm trống bộ nhớ đệm (Clear cache) trình duyệt và thử lại.");
     } else {
-      alert("Lỗi kết nối mạng hoặc sai cấu trúc API. Hãy kiểm tra lại link API_URL.");
+      alert("Lỗi kết nối. Hãy kiểm tra lại API_URL.");
     }
   }
 }
@@ -216,7 +225,7 @@ function createG1Btn(card) {
 }
 
 // ==============================================================================
-// ====================== GAME 2: NGHE & CHỌN CÂU (Lấy từ Sheet MauCau) =========
+// ====================== GAME 2: NGHE & CHỌN CÂU ===============================
 // ==============================================================================
 let selectedG2 = { audio: null, hanzi: null };
 function initGame2() {
@@ -236,7 +245,6 @@ function initGame2() {
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
   shuffle(sentences).forEach((s, idx) => {
-    // Audio
     const btn = document.createElement('button');
     btn.className = "w-full scroll-container p-6 text-center text-xl font-bold flex items-center justify-center hover:border-[#8b5e34] transition";
     btn.innerHTML = `<span class="mr-2 text-2xl">🔊</span> Câu ${idx + 1}`; 
@@ -251,7 +259,6 @@ function initGame2() {
   });
 
   shuffle(sentences).forEach(s => {
-    // Hán Tự
     const btn = document.createElement('button');
     btn.className = "w-full scroll-container p-5 text-center text-xl font-semibold hover:border-[#8b5e34] transition";
     btn.innerText = s.hanzi; 
@@ -281,7 +288,7 @@ function checkG2Match() {
 }
 
 // ==============================================================================
-// ====================== GAME 3: VẤN ĐẠO THẤT (Khảo Thí Đánh Máy & Chấm Điểm) ==
+// ====================== GAME 3: VẤN ĐẠO THẤT (Khảo Thí Đánh Máy & Lưu Điểm) ===
 // ==============================================================================
 let g3Sentences = [];
 let g3CurrentIndex = 0;
@@ -322,7 +329,6 @@ function checkG3Answer() {
   if (g3CurrentIsAnswered) return;
   
   const inputVal = document.getElementById('g3-input').value.trim();
-  // Xóa bỏ các dấu câu khi so sánh để chấm điểm linh hoạt hơn
   const formatText = (text) => text.replace(/[\s，。！？、,.\?\!]/g, ''); 
   
   const formattedInput = formatText(inputVal);
@@ -368,26 +374,23 @@ function nextG3Question() {
   }
 }
 
-async function finishGame3() {
+function finishGame3() {
   document.getElementById('game3-area').classList.add('hidden');
-  const winMessage = document.getElementById('win-message');
-  winMessage.classList.remove('hidden');
+  document.getElementById('win-message').classList.remove('hidden');
   
   const total = g3Sentences.length;
   document.getElementById('win-score-text').innerText = `Thành tích Khảo Thí: ${g3Score}/${total} câu`;
   
-  // Gửi điểm số về Google Sheets
+  // Gửi điểm số về Google Sheets qua phương thức GET an toàn
   const studentName = localStorage.getItem('cobi_student_name') || "Ẩn danh";
   const testName = currentLevel.title + " (Đánh Máy)";
   const scoreStr = `${g3Score}/${total}`;
   
   try {
-    await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ name: studentName, testName: testName, score: scoreStr })
-    });
+    const saveUrl = API_URL + `?action=saveScore&name=${encodeURIComponent(studentName)}&testName=${encodeURIComponent(testName)}&score=${encodeURIComponent(scoreStr)}`;
+    fetch(saveUrl, { mode: 'no-cors' }); 
   } catch (e) {
-    console.warn("Không thể gửi điểm về hệ thống.");
+    console.warn("Lỗi đường truyền khi lưu điểm.");
   }
 }
 
