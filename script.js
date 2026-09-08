@@ -1,7 +1,6 @@
 // ====== CẬP NHẬT WEB APP URL CỦA BẠN VÀO ĐÂY ======
 const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
 
-// Hàm tạo "Mã vân tay thiết bị" để chống share pass
 function getDeviceId() {
   let deviceId = localStorage.getItem('cobi_device_id');
   if (!deviceId) {
@@ -11,7 +10,6 @@ function getDeviceId() {
   return deviceId;
 }
 
-// --- Xử lý Đăng Nhập ---
 window.onload = async function() {
   if(localStorage.getItem('cobi_auth') === 'true') {
     document.getElementById('login-screen').classList.add('hidden');
@@ -61,7 +59,6 @@ async function checkLogin() {
   btn.disabled = false;
 }
 
-// --- Tải Dữ Liệu Từ Google Sheets ---
 let gameData = { lessons: [] };
 async function loadGameData() {
   const loadingScreen = document.getElementById('loading-screen');
@@ -93,7 +90,6 @@ async function loadGameData() {
   }
 }
 
-// --- Các biến và hàm hệ thống ---
 let currentMode = 'lessons'; 
 let currentLevel = null; 
 let matchedCount = 0; 
@@ -116,7 +112,7 @@ function showScreen(screenId) {
   document.getElementById(screenId).classList.remove('hidden');
 }
 
-// --- Xử lý Chọn Chế độ (Gom nhóm thông minh theo tên bài) ---
+// --- TÍNH NĂNG MỚI: TẠO MENU XỔ XUỐNG (ACCORDION) GỌN GÀNG ---
 function selectMode(mode) {
   currentMode = mode;
   const levelTitle = document.getElementById('level-title');
@@ -126,50 +122,91 @@ function selectMode(mode) {
   if (mode === 'lessons') {
     levelTitle.innerText = "Luyện Khí Tĩnh Thất - Chọn Giáo Trình";
 
-    let groups = {
-      "Msutong Sơ Cấp Quyển 1": [],
-      "Msutong Sơ Cấp Quyển 2": [],
-      "HSK & Khác": []
-    };
+    let groups = {};
 
+    // Tự động phân loại dựa vào tên bài trên Google Sheets
     gameData.lessons.forEach((item, index) => {
       const titleUpper = item.title.toUpperCase();
+      let groupName = "Các bài học khác"; 
+
       if (titleUpper.includes("Q1") || titleUpper.includes("QUYỂN 1") || titleUpper.includes("MSUTONG 1")) {
-        groups["Msutong Sơ Cấp Quyển 1"].push({ item, index });
+        groupName = "Msutong Quyển 1";
       } else if (titleUpper.includes("Q2") || titleUpper.includes("QUYỂN 2") || titleUpper.includes("MSUTONG 2")) {
-        groups["Msutong Sơ Cấp Quyển 2"].push({ item, index });
-      } else {
-        groups["HSK & Khác"].push({ item, index });
+        groupName = "Msutong Quyển 2";
+      } else if (titleUpper.includes("HSK 1") || titleUpper.includes("HSK1")) {
+        groupName = "HSK 1";
+      } else if (titleUpper.includes("HSK 2") || titleUpper.includes("HSK2")) {
+        groupName = "HSK 2";
+      } else if (titleUpper.includes("HSK 3") || titleUpper.includes("HSK3")) {
+        groupName = "HSK 3";
+      } else if (titleUpper.includes("HSK 4") || titleUpper.includes("HSK4")) {
+        groupName = "HSK 4";
+      } else if (titleUpper.includes("HSK 5") || titleUpper.includes("HSK5")) {
+        groupName = "HSK 5";
+      } else if (titleUpper.includes("HSK 6") || titleUpper.includes("HSK6")) {
+        groupName = "HSK 6";
       }
+
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push({ item, index });
     });
 
-    Object.keys(groups).forEach(groupName => {
-      if (groups[groupName].length > 0) {
-        const groupDiv = document.createElement('div');
-        groupDiv.className = "scroll-container p-5 mb-4 col-span-1 md:col-span-2";
+    // Sắp xếp thứ tự ưu tiên hiển thị từ trên xuống dưới
+    const order = ["Msutong Quyển 1", "Msutong Quyển 2", "HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6", "Các bài học khác"];
+
+    order.forEach((groupName, i) => {
+      if (groups[groupName] && groups[groupName].length > 0) {
         
-        let htmlContent = `<h3 class="text-xl font-bold text-[#5c3d2e] mb-3 border-b-2 border-[#b7906c] pb-2">📜 ${groupName}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
-        
+        // Tạo nút bấm to (Thanh Tiêu Đề Giáo Trình)
+        const groupHeader = document.createElement('button');
+        groupHeader.className = "w-full scroll-container p-5 mb-3 text-left flex justify-between items-center hover:bg-[#e0ac69] hover:text-white transition font-bold text-xl text-[#5c3d2e] shadow-sm";
+        groupHeader.innerHTML = `
+          <span>📚 ${groupName} <span class="text-sm font-normal opacity-80">(${groups[groupName].length} bài)</span></span>
+          <span id="icon-group-${i}" class="text-2xl transition-transform duration-300">▼</span>
+        `;
+
+        // Tạo khung chứa danh sách bài học (Mặc định ẩn)
+        const groupContent = document.createElement('div');
+        groupContent.id = `content-group-${i}`;
+        groupContent.className = "hidden grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 pl-4 border-l-4 border-[#b7906c] ml-2";
+
         groups[groupName].forEach(g => {
-          htmlContent += `
-            <button onclick="selectLevel(${g.index})" class="p-3 bg-[#fefae0] border-2 border-[#b7906c] rounded text-left hover:bg-[#e0ac69] hover:text-white transition flex justify-between items-center shadow-sm">
-              <div>
-                <div class="font-bold">${g.item.title}</div>
-                <div class="text-xs opacity-75">${g.item.words.length} từ | ${g.item.sentences.length} câu</div>
-              </div>
-              <span class="text-xl font-bold">→</span>
-            </button>
+          const btn = document.createElement('button');
+          btn.className = "p-3 bg-[#fefae0] border-2 border-[#b7906c] rounded text-left hover:bg-[#e0ac69] hover:text-white transition flex justify-between items-center shadow-sm text-[#5c3d2e]";
+          btn.onclick = () => selectLevel(g.index);
+          btn.innerHTML = `
+            <div>
+              <div class="font-bold">${g.item.title}</div>
+              <div class="text-xs opacity-75">${g.item.words.length} từ | ${g.item.sentences.length} câu</div>
+            </div>
+            <span class="font-bold text-xl">→</span>
           `;
+          groupContent.appendChild(btn);
         });
-        
-        htmlContent += `</div>`;
-        groupDiv.innerHTML = htmlContent;
-        levelList.appendChild(groupDiv);
+
+        // Hiệu ứng bấm xổ ra / cuộn lại
+        groupHeader.onclick = () => {
+          const isHidden = groupContent.classList.contains('hidden');
+          const icon = document.getElementById(`icon-group-${i}`);
+          
+          if (isHidden) {
+            groupContent.classList.remove('hidden');
+            icon.style.transform = "rotate(180deg)"; // Xoay mũi tên lên
+          } else {
+            groupContent.classList.add('hidden');
+            icon.style.transform = "rotate(0deg)"; // Xoay mũi tên xuống
+          }
+        };
+
+        levelList.appendChild(groupHeader);
+        levelList.appendChild(groupContent);
       }
     });
 
   } else {
-    levelTitle.innerText = "Cảnh Giới Tĩnh Thất - Đang bế關 tu luyện...";
+    levelTitle.innerText = "Cảnh Giới Tĩnh Thất - Đang bế quan tu luyện...";
   }
 
   showScreen('level-select-screen');
@@ -205,9 +242,6 @@ function startGame(gameNumber) {
   else if (gameNumber === 3) initGame3();
 }
 
-// ==============================================================================
-// ==================== GAME 1: TỪ VỰNG =========================================
-// ==============================================================================
 let selectedG1 = null; 
 function initGame1() {
   document.getElementById('game1-area').classList.remove('hidden');
@@ -264,9 +298,6 @@ function createG1Btn(card) {
   return btn;
 }
 
-// ==============================================================================
-// ====================== GAME 2: NGHE & CHỌN CÂU ===============================
-// ==============================================================================
 let selectedG2 = { audio: null, hanzi: null };
 function initGame2() {
   document.getElementById('game2-area').classList.remove('hidden');
@@ -327,9 +358,6 @@ function checkG2Match() {
   }
 }
 
-// ==============================================================================
-// ====================== GAME 3: VẤN ĐẠO THẤT (Khảo Thí Đánh Máy & Lưu Điểm) ===
-// ==============================================================================
 let g3Sentences = [];
 let g3CurrentIndex = 0;
 let g3Score = 0;
