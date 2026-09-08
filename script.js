@@ -1,5 +1,5 @@
 // ====== CẬP NHẬT WEB APP URL CỦA BẠN VÀO ĐÂY ======
-const API_URL = "URL_CỦA_BẠN_Ở_ĐÂY"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
 
 // Hàm tạo "Mã vân tay thiết bị" để chống share pass
 function getDeviceId() {
