@@ -1,5 +1,5 @@
 // ====== CẬP NHẬT WEB APP URL CỦA BẠN VÀO ĐÂY ======
-const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
+const API_URL = "URL_CỦA_BẠN_Ở_ĐÂY"; 
 
 // Hàm tạo "Mã vân tay thiết bị" để chống share pass
 function getDeviceId() {
@@ -61,14 +61,14 @@ async function checkLogin() {
   btn.disabled = false;
 }
 
-// --- Tải Dữ Liệu ---
+// --- Tải Dữ Liệu Từ Google Sheets ---
 let gameData = { lessons: [] };
 async function loadGameData() {
   const loadingScreen = document.getElementById('loading-screen');
   loadingScreen.classList.remove('hidden');
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 giây timeout
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
     const response = await fetch(API_URL + "?action=getData", { signal: controller.signal });
@@ -86,7 +86,7 @@ async function loadGameData() {
   } catch (e) {
     loadingScreen.classList.add('hidden');
     if (e.name === 'AbortError') {
-      alert("Kết nối quá hạn! Vui lòng làm trống bộ nhớ đệm (Clear cache) trình duyệt và thử lại.");
+      alert("Kết nối quá hạn! Vui lòng xóa bộ nhớ đệm (Clear cache) trình duyệt và thử lại.");
     } else {
       alert("Lỗi kết nối. Hãy kiểm tra lại API_URL.");
     }
@@ -116,24 +116,62 @@ function showScreen(screenId) {
   document.getElementById(screenId).classList.remove('hidden');
 }
 
+// --- Xử lý Chọn Chế độ (Gom nhóm thông minh theo tên bài) ---
 function selectMode(mode) {
   currentMode = mode;
+  const levelTitle = document.getElementById('level-title');
   const levelList = document.getElementById('level-list');
   levelList.innerHTML = ''; 
 
-  gameData.lessons.forEach((item, index) => {
-    const btn = document.createElement('button');
-    btn.className = "scroll-container p-5 text-left flex justify-between items-center hover:border-[#8b5e34] hover:shadow-md transition";
-    btn.onclick = () => selectLevel(index);
-    btn.innerHTML = `
-      <div>
-        <div class="font-bold text-xl">${item.title}</div>
-        <div class="text-sm text-[#7f5539] mt-1">${item.words.length} từ vựng | ${item.sentences.length} mẫu câu</div>
-      </div>
-      <span class="text-[#8b5e34] text-2xl font-bold">→</span>
-    `;
-    levelList.appendChild(btn);
-  });
+  if (mode === 'lessons') {
+    levelTitle.innerText = "Luyện Khí Tĩnh Thất - Chọn Giáo Trình";
+
+    let groups = {
+      "Msutong Sơ Cấp Quyển 1": [],
+      "Msutong Sơ Cấp Quyển 2": [],
+      "HSK & Khác": []
+    };
+
+    gameData.lessons.forEach((item, index) => {
+      const titleUpper = item.title.toUpperCase();
+      if (titleUpper.includes("Q1") || titleUpper.includes("QUYỂN 1") || titleUpper.includes("MSUTONG 1")) {
+        groups["Msutong Sơ Cấp Quyển 1"].push({ item, index });
+      } else if (titleUpper.includes("Q2") || titleUpper.includes("QUYỂN 2") || titleUpper.includes("MSUTONG 2")) {
+        groups["Msutong Sơ Cấp Quyển 2"].push({ item, index });
+      } else {
+        groups["HSK & Khác"].push({ item, index });
+      }
+    });
+
+    Object.keys(groups).forEach(groupName => {
+      if (groups[groupName].length > 0) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = "scroll-container p-5 mb-4 col-span-1 md:col-span-2";
+        
+        let htmlContent = `<h3 class="text-xl font-bold text-[#5c3d2e] mb-3 border-b-2 border-[#b7906c] pb-2">📜 ${groupName}</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+        
+        groups[groupName].forEach(g => {
+          htmlContent += `
+            <button onclick="selectLevel(${g.index})" class="p-3 bg-[#fefae0] border-2 border-[#b7906c] rounded text-left hover:bg-[#e0ac69] hover:text-white transition flex justify-between items-center shadow-sm">
+              <div>
+                <div class="font-bold">${g.item.title}</div>
+                <div class="text-xs opacity-75">${g.item.words.length} từ | ${g.item.sentences.length} câu</div>
+              </div>
+              <span class="text-xl font-bold">→</span>
+            </button>
+          `;
+        });
+        
+        htmlContent += `</div>`;
+        groupDiv.innerHTML = htmlContent;
+        levelList.appendChild(groupDiv);
+      }
+    });
+
+  } else {
+    levelTitle.innerText = "Cảnh Giới Tĩnh Thất - Đang bế關 tu luyện...";
+  }
+
   showScreen('level-select-screen');
 }
 
@@ -144,10 +182,12 @@ function selectLevel(index) {
   const hasSentences = currentLevel.sentences && currentLevel.sentences.length > 0;
   ['btn-game-2', 'btn-game-3'].forEach(id => {
     const btn = document.getElementById(id);
-    if (hasSentences) {
-      btn.classList.remove('opacity-50', 'pointer-events-none');
-    } else {
-      btn.classList.add('opacity-50', 'pointer-events-none');
+    if (btn) {
+      if (hasSentences) {
+        btn.classList.remove('opacity-50', 'pointer-events-none');
+      } else {
+        btn.classList.add('opacity-50', 'pointer-events-none');
+      }
     }
   });
 
@@ -381,7 +421,6 @@ function finishGame3() {
   const total = g3Sentences.length;
   document.getElementById('win-score-text').innerText = `Thành tích Khảo Thí: ${g3Score}/${total} câu`;
   
-  // Gửi điểm số về Google Sheets qua phương thức GET an toàn
   const studentName = localStorage.getItem('cobi_student_name') || "Ẩn danh";
   const testName = currentLevel.title + " (Đánh Máy)";
   const scoreStr = `${g3Score}/${total}`;
