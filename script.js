@@ -211,10 +211,6 @@ function startGame(gameNumber) {
 }
 
 // ================= GAME TÍCH TỪ =================
-function initGame1() { document.getElementById('game1-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "1. Ghép Hán tự & Nghĩa"; }
-function initGame2() { document.getElementById('game2-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "2. Nghe & Chọn Hán tự"; }
-function initGame3() { document.getElementById('game3-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "3. Khảo Thí Đánh Máy"; }
-
 let selectedG1 = null; let matchedCount = 0; let totalPairs = 0;
 function initGame1() {
   document.getElementById('game1-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "1. Ghép Hán tự & Nghĩa";
@@ -321,7 +317,7 @@ function finishGame3() {
 }
 
 
-// ================= NGỰ PHÁP TÂM QUYẾT (ĐÃ LÀM MỚI GIAO DIỆN) =================
+// ================= NGỰ PHÁP TÂM QUYẾT (ĐÃ FIX LỖI CẤU TRÚC ĐA DÒNG) =================
 function startNguPhapTheory() {
   showScreen('np-theory-screen');
   const container = document.getElementById('np-theory-content'); 
@@ -357,7 +353,7 @@ function startNguPhapTheory() {
           });
         }
         
-        // Render từng Block cấu trúc độc lập
+        // Render từng khối giải thích độc lập trong cùng một điểm ngữ pháp
         detailsHtml += `<div class="mb-8 pb-8 ${dIdx < item.details.length - 1 ? 'border-b-2 border-dashed border-[#b7906c]/40' : ''}">`;
         
         if (formulaHtml) {
@@ -370,6 +366,7 @@ function startNguPhapTheory() {
         }
         
         if (usageHtml) {
+          // Chỉ thêm số đếm "Cách dùng 1, 2..." nếu ô cấu trúc bị trống (như trong ảnh mẫu)
           detailsHtml += `
             <div class="mb-5">
               <p class="text-[#8b5e34] font-bold mb-2">Cách dùng ${item.details.length > 1 && !formulaHtml ? dIdx + 1 : ''}:</p>
@@ -391,7 +388,7 @@ function startNguPhapTheory() {
       });
     }
     
-    // Gói toàn bộ vào trong 1 Card lớn
+    // Gói toàn bộ vào trong 1 thẻ Card lớn mang tên Điểm Ngữ Pháp
     const card = document.createElement('div');
     card.className = "bg-[#fcf6e8] border-2 border-[#b7906c] rounded-xl p-6 md:p-10 mb-10 shadow-lg";
     card.innerHTML = `
