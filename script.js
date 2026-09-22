@@ -55,7 +55,7 @@ async function loadGameData() {
   const loadingScreen = document.getElementById('loading-screen');
   loadingScreen.classList.remove('hidden');
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 giây
+  const timeoutId = setTimeout(() => controller.abort(), 25000); 
 
   try {
     const response = await fetch(API_URL + "?action=getData", { signal: controller.signal });
@@ -85,7 +85,6 @@ function showScreen(screenId) {
   if(target) target.classList.remove('hidden');
 }
 
-// ================= HỆ THỐNG ĐIỀU HƯỚNG CHÍNH =================
 function selectMode(mode) {
   currentAppMode = mode;
   if (mode === 'tich_tu') {
@@ -189,7 +188,6 @@ function selectLevel(index) {
   }
 }
 
-// BỘ LỌC ÂM THANH CHUẨN 100% (CHỈ ĐỌC HÁN TỰ)
 function speakChinese(text) {
   if (!text) return;
   if ('speechSynthesis' in window) {
@@ -209,13 +207,13 @@ function startGame(gameNumber) {
   document.getElementById('win-score-text').innerText = "";
   ['game1-area', 'game2-area', 'game3-area'].forEach(id => document.getElementById(id).classList.add('hidden'));
   matchedCount = 0; 
-  if (gameNumber === 1) initGame1(); 
-  else if (gameNumber === 2) initGame2(); 
-  else if (gameNumber === 3) initGame3();
+  if (gameNumber === 1) initGame1(); else if (gameNumber === 2) initGame2(); else if (gameNumber === 3) initGame3();
 }
 
-
-// ================= TÍCH TỪ TĨNH THẤT (TỪ VỰNG) ĐẦY ĐỦ =================
+// ================= GAME TÍCH TỪ =================
+function initGame1() { document.getElementById('game1-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "1. Ghép Hán tự & Nghĩa"; }
+function initGame2() { document.getElementById('game2-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "2. Nghe & Chọn Hán tự"; }
+function initGame3() { document.getElementById('game3-area').classList.remove('hidden'); document.getElementById('game-status').innerText = "3. Khảo Thí Đánh Máy"; }
 
 let selectedG1 = null; let matchedCount = 0; let totalPairs = 0;
 function initGame1() {
@@ -224,14 +222,12 @@ function initGame1() {
   colHanzi.innerHTML = ''; colMeaning.innerHTML = ''; selectedG1 = null; matchedCount = 0;
   let hanziCards = []; let meaningCards = [];
   currentLevel.words.forEach((w, idx) => {
-    hanziCards.push({ id: idx, type: 'hanzi', content: w.hanzi, word: w }); 
-    meaningCards.push({ id: idx, type: 'meaning', content: w.meaning, word: w });
+    hanziCards.push({ id: idx, type: 'hanzi', content: w.hanzi, word: w }); meaningCards.push({ id: idx, type: 'meaning', content: w.meaning, word: w });
   });
   hanziCards.sort(() => Math.random() - 0.5); meaningCards.sort(() => Math.random() - 0.5); totalPairs = currentLevel.words.length;
   hanziCards.forEach(card => colHanzi.appendChild(createG1Btn(card)));
   meaningCards.forEach(card => colMeaning.appendChild(createG1Btn(card)));
 }
-
 function createG1Btn(card) {
   const btn = document.createElement('button');
   btn.className = "w-full scroll-container p-4 text-xl md:text-2xl font-bold flex items-center justify-center min-h-[90px] text-center hover:scale-[1.02] hover:border-[#8b5e34] transition";
@@ -325,39 +321,89 @@ function finishGame3() {
 }
 
 
-// ================= NGỰ PHÁP TĨNH THẤT ĐẦY ĐỦ =================
+// ================= NGỰ PHÁP TÂM QUYẾT (ĐÃ LÀM MỚI GIAO DIỆN) =================
 function startNguPhapTheory() {
   showScreen('np-theory-screen');
-  const container = document.getElementById('np-theory-content'); container.innerHTML = '';
+  const container = document.getElementById('np-theory-content'); 
+  container.innerHTML = '';
+  
   const theoryData = currentLevel.grammarTheory || [];
   theoryData.forEach((item, idx) => {
     let detailsHtml = '';
+    
     if (item.details && item.details.length > 0) {
       item.details.forEach((detail, dIdx) => {
+        const formulaHtml = detail.formula ? detail.formula.replace(/\n/g, '<br>') : '';
         const usageHtml = detail.usage ? detail.usage.replace(/\n/g, '<br>') : '';
         let exampleHtml = '';
+        
         if (detail.example) {
           const exLines = detail.example.split('\n');
           exLines.forEach(line => {
             if(line.trim() !== '') {
               const splitIndex = line.indexOf('-');
               let hz = line; let vi = '';
-              if(splitIndex > -1) { hz = line.substring(0, splitIndex).trim(); vi = line.substring(splitIndex + 1).trim(); }
-              exampleHtml += `<div class="mb-3 bg-[#fefae0] p-3 rounded border border-[#b7906c]/30 text-[#5c3d2e] shadow-sm"><p class="text-xl font-bold mb-1 cursor-pointer hover:text-[#8b5e34]" onclick="speakChinese('${hz}')">🔊 ${hz}</p><p class="italic text-sm text-[#7f5539]">${vi}</p></div>`;
+              if(splitIndex > -1) { 
+                hz = line.substring(0, splitIndex).trim(); 
+                vi = line.substring(splitIndex + 1).trim(); 
+              }
+              exampleHtml += `
+                <div class="mb-3 bg-[#fefae0] p-4 rounded border border-[#b7906c]/30 text-[#5c3d2e] shadow-sm">
+                  <p class="text-xl font-bold mb-1 cursor-pointer hover:text-[#8b5e34] transition" onclick="speakChinese('${hz.replace(/'/g, "\\'")}')">🔊 ${hz}</p>
+                  <p class="italic text-[#7f5539]">${vi}</p>
+                </div>
+              `;
             }
           });
         }
-        detailsHtml += `<div class="mb-5 pb-5 ${dIdx < item.details.length - 1 ? 'border-b border-dashed border-[#b7906c]/40' : ''}">${usageHtml ? `<p class="text-[#8b5e34] font-bold mb-2">Cách dùng ${item.details.length > 1 ? dIdx+1 : ''}:</p><p class="text-[#7f5539] leading-relaxed mb-4">${usageHtml}</p>` : ''}${exampleHtml ? `<p class="text-[#8b5e34] font-bold mb-2">Ví dụ:</p>${exampleHtml}` : ''}</div>`;
+        
+        // Render từng Block cấu trúc độc lập
+        detailsHtml += `<div class="mb-8 pb-8 ${dIdx < item.details.length - 1 ? 'border-b-2 border-dashed border-[#b7906c]/40' : ''}">`;
+        
+        if (formulaHtml) {
+          detailsHtml += `
+            <div class="mb-5">
+              <p class="text-[#8b5e34] font-bold mb-2 text-lg">📌 Cấu trúc:</p>
+              <p class="bg-[#fefae0] p-4 rounded-lg border-2 border-[#b7906c]/30 text-xl font-mono text-[#5c3d2e] font-bold tracking-wide leading-relaxed shadow-inner">${formulaHtml}</p>
+            </div>
+          `;
+        }
+        
+        if (usageHtml) {
+          detailsHtml += `
+            <div class="mb-5">
+              <p class="text-[#8b5e34] font-bold mb-2">Cách dùng ${item.details.length > 1 && !formulaHtml ? dIdx + 1 : ''}:</p>
+              <p class="text-[#7f5539] leading-relaxed text-lg">${usageHtml}</p>
+            </div>
+          `;
+        }
+        
+        if (exampleHtml) {
+          detailsHtml += `
+            <div>
+              <p class="text-[#8b5e34] font-bold mb-2">Ví dụ:</p>
+              ${exampleHtml}
+            </div>
+          `;
+        }
+        
+        detailsHtml += `</div>`;
       });
     }
-    const formulaHtml = item.formula ? item.formula.replace(/\n/g, '<br>') : '';
+    
+    // Gói toàn bộ vào trong 1 Card lớn
     const card = document.createElement('div');
-    card.className = "bg-[#fcf6e8] border-2 border-[#b7906c] rounded-lg p-6 md:p-8 mb-8 shadow-md";
-    card.innerHTML = `<h3 class="text-2xl font-bold text-[#5c3d2e] mb-5 pb-3 border-b-2 border-[#b7906c]/50">♦ Cấu trúc: ${item.name}</h3>${formulaHtml ? `<div class="mb-6"><p class="text-[#8b5e34] font-bold mb-2">Công thức:</p><p class="bg-[#fefae0] p-4 rounded border-2 border-[#b7906c]/30 text-xl font-mono text-[#5c3d2e] font-bold tracking-wide">${formulaHtml}</p></div>` : ''}<div>${detailsHtml}</div>`;
+    card.className = "bg-[#fcf6e8] border-2 border-[#b7906c] rounded-xl p-6 md:p-10 mb-10 shadow-lg";
+    card.innerHTML = `
+      <h3 class="text-2xl md:text-3xl font-black text-[#5c3d2e] mb-8 pb-4 border-b-4 border-[#b7906c]/50 text-center uppercase tracking-widest drop-shadow-sm">♦ ${item.name} ♦</h3>
+      <div>${detailsHtml}</div>
+    `;
     container.appendChild(card);
   });
 }
 
+
+// ================= PHÁ TRẬN ĐÀI =================
 let npQuestions = []; let npCurrentIndex = 0; let npScore = 0; let npSelectedWords = []; 
 function startNguPhapPractice() {
   showScreen('np-practice-screen');
@@ -442,26 +488,14 @@ function finishNpPractice() {
   try { fetch(API_URL + `?action=saveScore&name=${encodeURIComponent(studentName)}&testName=${encodeURIComponent(testName)}&score=${npScore}/${npQuestions.length}`, { mode: 'no-cors' }); } catch (e) {}
 }
 
-// ================= ÔN CỐ HIÊN (3 CHẾ ĐỘ) =================
-let ocQuestions = []; 
-let ocCurrentIndex = 0; 
-let ocScore = 0; 
-let ocLiveAnswers = []; 
-let ocLiveCurrentStep = 0; 
-let ocSelectedOption = null;
-let ocCtIsAnswered = false;
+// ================= ÔN CỐ HIÊN =================
+let ocQuestions = []; let ocCurrentIndex = 0; let ocScore = 0; let ocLiveAnswers = []; let ocLiveCurrentStep = 0; let ocSelectedOption = null; let ocCtIsAnswered = false;
 
 function startOnCoPractice() {
   showScreen('onco-practice-screen');
   ocQuestions = [...(currentLevel.onCoPractice || [])];
   ocCurrentIndex = 0; ocScore = 0;
-  if(ocQuestions.length === 0) { 
-    document.getElementById('oc-instruction').innerText = "Chưa có bài tập nào được giao."; 
-    document.getElementById('oc-nghelenh-area').classList.add('hidden'); 
-    document.getElementById('oc-tracnghiem-area').classList.add('hidden'); 
-    document.getElementById('oc-chinhta-area').classList.add('hidden'); 
-    return; 
-  }
+  if(ocQuestions.length === 0) { document.getElementById('oc-instruction').innerText = "Chưa có bài tập nào được giao."; document.getElementById('oc-nghelenh-area').classList.add('hidden'); document.getElementById('oc-tracnghiem-area').classList.add('hidden'); document.getElementById('oc-chinhta-area').classList.add('hidden'); return; }
   renderOcQuestion();
 }
 
@@ -469,20 +503,16 @@ function renderOcQuestion() {
   const q = ocQuestions[ocCurrentIndex];
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
   document.getElementById('oc-btn-next').classList.add('hidden');
-  
-  // Tắt cả 3 khu vực trước khi phân loại
   document.getElementById('oc-nghelenh-area').classList.add('hidden');
   document.getElementById('oc-tracnghiem-area').classList.add('hidden');
   document.getElementById('oc-chinhta-area').classList.add('hidden');
 
   let rawContent = q.content; let rawOptions = q.options; let rawAnswer = q.answer;
 
-  // AI Tự động sửa lỗi hoán đổi cột C và D
   if (rawContent && rawContent.includes('/') && (!rawOptions || !rawOptions.includes('/'))) {
     rawAnswer = rawOptions; rawOptions = rawContent; rawContent = "";
   }
 
-  // KHU VỰC 1: NGHE LỆNH SƯ PHỤ
   if (q.type.toLowerCase().includes("nghe lệnh")) {
     document.getElementById('oc-instruction').innerText = rawContent || "Hãy lắng nghe hiệu lệnh của Sư Phụ và chọn thẻ tương ứng!";
     document.getElementById('oc-nghelenh-area').classList.remove('hidden');
@@ -501,8 +531,6 @@ function renderOcQuestion() {
       pool.appendChild(btn);
     });
   } 
-  
-  // KHU VỰC 2: TRẮC NGHIỆM NGHE
   else if (q.type.toLowerCase().includes("trắc nghiệm")) {
     document.getElementById('oc-instruction').innerText = "Lắng nghe âm thanh và chọn đáp án chính xác nhất:";
     document.getElementById('oc-tracnghiem-area').classList.remove('hidden');
@@ -539,8 +567,6 @@ function renderOcQuestion() {
     });
     playOcAudio();
   }
-
-  // KHU VỰC 3: CHÍNH TẢ
   else if (q.type.toLowerCase().includes("chính tả")) {
     document.getElementById('oc-instruction').innerText = rawContent || "Hãy lắng nghe và gõ lại chính xác câu bạn nghe được:";
     document.getElementById('oc-chinhta-area').classList.remove('hidden');
@@ -557,38 +583,25 @@ function renderOcQuestion() {
 }
 
 // Logic Trắc Nghiệm Nghe
-function playOcAudio() {
-   const q = ocQuestions[ocCurrentIndex];
-   speakChinese(q.content); 
-}
+function playOcAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.content); }
 
 function checkOcTracNghiem() {
   if (!ocSelectedOption) return;
-  const q = ocQuestions[ocCurrentIndex];
-  const feedback = document.getElementById('oc-mc-feedback');
-  
+  const q = ocQuestions[ocCurrentIndex]; const feedback = document.getElementById('oc-mc-feedback');
   if (ocSelectedOption === q.answer.trim()) {
-    ocScore += 2;
-    feedback.innerHTML = `<span class="text-green-600">Tuyệt vời! Đáp án chính xác. (+2 điểm)</span>`;
-    document.getElementById('oc-btn-mc-check').classList.add('hidden');
-    document.getElementById('oc-btn-mc-help').classList.add('hidden');
-    document.getElementById('oc-btn-next').classList.remove('hidden');
+    ocScore += 2; feedback.innerHTML = `<span class="text-green-600">Tuyệt vời! Đáp án chính xác. (+2 điểm)</span>`;
+    document.getElementById('oc-btn-mc-check').classList.add('hidden'); document.getElementById('oc-btn-mc-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
     Array.from(document.getElementById('oc-mc-options').children).forEach(c => c.onclick = null);
   } else {
-    ocScore -= 1;
-    feedback.innerHTML = `<span class="text-red-600">Chưa chính xác! (Bị trừ 1 điểm)</span>`;
-    playOcAudio();
+    ocScore -= 1; feedback.innerHTML = `<span class="text-red-600">Chưa chính xác! (Bị trừ 1 điểm)</span>`; playOcAudio();
   }
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
 }
 
 function showOcTracNghiemHelp() {
-  const q = ocQuestions[ocCurrentIndex];
-  const feedback = document.getElementById('oc-mc-feedback');
+  const q = ocQuestions[ocCurrentIndex]; const feedback = document.getElementById('oc-mc-feedback');
   feedback.innerHTML = `<span class="text-[#8b5e34]">Đáp án đúng: ${q.answer}</span>`;
-  document.getElementById('oc-btn-mc-check').classList.add('hidden');
-  document.getElementById('oc-btn-mc-help').classList.add('hidden');
-  document.getElementById('oc-btn-next').classList.remove('hidden');
+  document.getElementById('oc-btn-mc-check').classList.add('hidden'); document.getElementById('oc-btn-mc-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
 }
 
 // Logic Nghe lệnh Sư phụ
@@ -597,48 +610,32 @@ function clickOcLiveWord(btn, word) {
   const feedback = document.getElementById('oc-live-feedback');
 
   if (word === targetWord) {
-    ocScore += 2; speakChinese(word);
-    feedback.innerHTML = `<span class="text-green-600">Chính xác! (+2 điểm)</span>`;
+    ocScore += 2; speakChinese(word); feedback.innerHTML = `<span class="text-green-600">Chính xác! (+2 điểm)</span>`;
     btn.style.visibility = 'hidden'; ocLiveCurrentStep++;
-    
     if (ocLiveCurrentStep >= ocLiveAnswers.length) {
-      feedback.innerHTML = `<span class="text-green-600">Tuyệt vời! Đã hoàn thành ải này.</span>`;
-      document.getElementById('oc-btn-next').classList.remove('hidden');
+      feedback.innerHTML = `<span class="text-green-600">Tuyệt vời! Đã hoàn thành ải này.</span>`; document.getElementById('oc-btn-next').classList.remove('hidden');
     }
   } else {
     ocScore -= 1; feedback.innerHTML = `<span class="text-red-600">Sai rồi! Bị trừ 1 điểm.</span>`;
-    btn.style.transform = "translateX(5px)";
-    setTimeout(() => btn.style.transform = "translateX(-5px)", 100);
-    setTimeout(() => btn.style.transform = "translateX(0)", 200);
+    btn.style.transform = "translateX(5px)"; setTimeout(() => btn.style.transform = "translateX(-5px)", 100); setTimeout(() => btn.style.transform = "translateX(0)", 200);
   }
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
 }
 
 // Logic Chép Chính Tả
-function playOcChinhTaAudio() {
-  const q = ocQuestions[ocCurrentIndex];
-  speakChinese(q.answer);
-}
+function playOcChinhTaAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.answer); }
 
 function checkOcChinhTa() {
   if (ocCtIsAnswered) return;
-  const q = ocQuestions[ocCurrentIndex];
-  const inputVal = document.getElementById('oc-ct-input').value.trim();
-  const formatText = (text) => text.replace(/[\s，。！？、,.\?\!]/g, ''); 
-  const feedback = document.getElementById('oc-ct-feedback');
+  const q = ocQuestions[ocCurrentIndex]; const inputVal = document.getElementById('oc-ct-input').value.trim();
+  const formatText = (text) => text.replace(/[\s，。！？、,.\?\!]/g, ''); const feedback = document.getElementById('oc-ct-feedback');
 
   if (formatText(inputVal) === formatText(q.answer) && inputVal !== "") {
-    ocScore += 2;
-    feedback.innerHTML = `<span class="text-green-600">Tuyệt vời! Chính xác 100%. (+2 điểm)</span>`;
-    ocCtIsAnswered = true;
-    document.getElementById('oc-ct-input').disabled = true;
-    document.getElementById('oc-btn-ct-check').classList.add('hidden');
-    document.getElementById('oc-btn-ct-help').classList.add('hidden');
-    document.getElementById('oc-btn-next').classList.remove('hidden');
+    ocScore += 2; feedback.innerHTML = `<span class="text-green-600">Tuyệt vời! Chính xác 100%. (+2 điểm)</span>`;
+    ocCtIsAnswered = true; document.getElementById('oc-ct-input').disabled = true; document.getElementById('oc-btn-ct-check').classList.add('hidden');
+    document.getElementById('oc-btn-ct-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
   } else {
-    ocScore -= 1;
-    feedback.innerHTML = `<span class="text-red-600">Sai chữ rồi! Nghe lại nhé (Bị trừ 1 điểm)</span>`;
-    playOcChinhTaAudio();
+    ocScore -= 1; feedback.innerHTML = `<span class="text-red-600">Sai chữ rồi! Nghe lại nhé (Bị trừ 1 điểm)</span>`; playOcChinhTaAudio();
   }
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
 }
@@ -646,21 +643,17 @@ function checkOcChinhTa() {
 function showOcChinhTaHelp() {
   if (ocCtIsAnswered) return;
   const q = ocQuestions[ocCurrentIndex];
-  document.getElementById('oc-ct-input').value = q.answer;
-  document.getElementById('oc-ct-input').disabled = true;
+  document.getElementById('oc-ct-input').value = q.answer; document.getElementById('oc-ct-input').disabled = true;
   document.getElementById('oc-ct-feedback').innerHTML = `<span class="text-[#8b5e34]">Trợ giúp: ${q.answer}</span>`;
-  ocCtIsAnswered = true;
-  document.getElementById('oc-btn-ct-check').classList.add('hidden');
-  document.getElementById('oc-btn-ct-help').classList.add('hidden');
-  document.getElementById('oc-btn-next').classList.remove('hidden');
+  ocCtIsAnswered = true; document.getElementById('oc-btn-ct-check').classList.add('hidden');
+  document.getElementById('oc-btn-ct-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
 }
 
 function nextOcPractice() {
   ocCurrentIndex++;
   if (ocCurrentIndex < ocQuestions.length) renderOcQuestion();
   else {
-    showScreen('win-message');
-    document.getElementById('win-score-text').innerText = `Thành tích Ôn Cố: ${ocScore} điểm`;
+    showScreen('win-message'); document.getElementById('win-score-text').innerText = `Thành tích Ôn Cố: ${ocScore} điểm`;
     const name = localStorage.getItem('cobi_student_name') || "Ẩn danh"; const testName = currentLevel.title + " (Ôn Cố Hiên)";
     try { fetch(API_URL + `?action=saveScore&name=${encodeURIComponent(name)}&testName=${encodeURIComponent(testName)}&score=${ocScore} điểm`, { mode: 'no-cors' }); } catch (e) {}
   }
