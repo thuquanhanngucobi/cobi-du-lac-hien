@@ -1,5 +1,4 @@
 // ====== CẬP NHẬT WEB APP URL CỦA BẠN VÀO ĐÂY ======
-// HÃY GIỮ NGUYÊN 2 DẤU NGOẶC KÉP MÀU CAM Ở 2 ĐẦU ĐƯỜNG LINK
 const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
 
 function getDeviceId() {
@@ -44,7 +43,7 @@ async function checkLogin() {
       errorText.innerText = "Lệnh bài không chính xác."; errorText.classList.remove('hidden');
     }
   } catch (e) {
-    errorText.innerText = "Mất kết nối API. Hãy kiểm tra lại link API của Sư phụ!"; errorText.classList.remove('hidden');
+    errorText.innerText = "Mất kết nối API."; errorText.classList.remove('hidden');
   }
   btn.innerText = "Xác Nhận"; btn.disabled = false;
 }
@@ -492,14 +491,21 @@ function finishNpPractice() {
   try { fetch(API_URL + `?action=saveScore&name=${encodeURIComponent(studentName)}&testName=${encodeURIComponent(testName)}&score=${npScore}/${npQuestions.length}`, { mode: 'no-cors' }); } catch (e) {}
 }
 
-// ================= ÔN CỐ HIÊN =================
-let ocQuestions = []; let ocCurrentIndex = 0; let ocScore = 0; let ocLiveAnswers = []; let ocLiveCurrentStep = 0; let ocSelectedOption = null; let ocCtIsAnswered = false;
+// ================= ÔN CỐ HIÊN (HỖ TRỢ 5 DẠNG BÀI TẬP) =================
+let ocQuestions = []; let ocCurrentIndex = 0; let ocScore = 0; let ocLiveAnswers = []; let ocLiveCurrentStep = 0; let ocSelectedOption = null; let ocCtIsAnswered = false; let ocSelectedWords = []; let ocDtsxIsAnswered = false;
 
 function startOnCoPractice() {
   showScreen('onco-practice-screen');
   ocQuestions = [...(currentLevel.onCoPractice || [])];
   ocCurrentIndex = 0; ocScore = 0;
-  if(ocQuestions.length === 0) { document.getElementById('oc-instruction').innerText = "Chưa có bài tập nào được giao."; document.getElementById('oc-nghelenh-area').classList.add('hidden'); document.getElementById('oc-tracnghiem-area').classList.add('hidden'); document.getElementById('oc-chinhta-area').classList.add('hidden'); return; }
+  if(ocQuestions.length === 0) { 
+      document.getElementById('oc-instruction').innerText = "Chưa có bài tập nào được giao."; 
+      document.getElementById('oc-nghelenh-area').classList.add('hidden'); 
+      document.getElementById('oc-tracnghiem-area').classList.add('hidden'); 
+      document.getElementById('oc-chinhta-area').classList.add('hidden'); 
+      document.getElementById('oc-dientusapxep-area').classList.add('hidden');
+      return; 
+  }
   renderOcQuestion();
 }
 
@@ -507,20 +513,26 @@ function renderOcQuestion() {
   const q = ocQuestions[ocCurrentIndex];
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
   document.getElementById('oc-btn-next').classList.add('hidden');
+  
+  // Ẩn tất cả khu vực
   document.getElementById('oc-nghelenh-area').classList.add('hidden');
   document.getElementById('oc-tracnghiem-area').classList.add('hidden');
   document.getElementById('oc-chinhta-area').classList.add('hidden');
+  document.getElementById('oc-dientusapxep-area').classList.add('hidden');
 
   let rawContent = q.content; let rawOptions = q.options; let rawAnswer = q.answer;
 
-  if (rawContent && rawContent.includes('/') && (!rawOptions || !rawOptions.includes('/'))) {
+  // AI Tự động sửa lỗi hoán đổi cột cho Nghe lệnh / Trắc nghiệm
+  if (rawContent && rawContent.includes('/') && (!rawOptions || !rawOptions.includes('/')) && !q.type.toLowerCase().includes("sắp xếp")) {
     rawAnswer = rawOptions; rawOptions = rawContent; rawContent = "";
   }
 
-  if (q.type.toLowerCase().includes("nghe lệnh")) {
+  const typeLow = q.type.toLowerCase();
+
+  // DẠNG 1: NGHE LỆNH
+  if (typeLow.includes("nghe lệnh")) {
     document.getElementById('oc-instruction').innerText = rawContent || "Hãy lắng nghe hiệu lệnh của Sư Phụ và chọn thẻ tương ứng!";
     document.getElementById('oc-nghelenh-area').classList.remove('hidden');
-    
     ocLiveAnswers = (rawAnswer || "").split('/').map(s => s.trim()).filter(s => s !== "");
     ocLiveCurrentStep = 0;
     const pool = document.getElementById('oc-words-pool'); pool.innerHTML = '';
@@ -535,8 +547,10 @@ function renderOcQuestion() {
       pool.appendChild(btn);
     });
   } 
-  else if (q.type.toLowerCase().includes("trắc nghiệm")) {
-    document.getElementById('oc-instruction').innerText = "Lắng nghe âm thanh và chọn đáp án chính xác nhất:";
+  
+  // DẠNG 2: TRẮC NGHIỆM
+  else if (typeLow.includes("trắc nghiệm")) {
+    document.getElementById('oc-instruction').innerText = rawContent || "Lắng nghe âm thanh và chọn đáp án chính xác nhất:";
     document.getElementById('oc-tracnghiem-area').classList.remove('hidden');
     document.getElementById('oc-btn-mc-check').classList.add('hidden');
     document.getElementById('oc-btn-mc-help').classList.remove('hidden');
@@ -571,10 +585,20 @@ function renderOcQuestion() {
     });
     playOcAudio();
   }
-  else if (q.type.toLowerCase().includes("chính tả")) {
-    document.getElementById('oc-instruction').innerText = rawContent || "Hãy lắng nghe và gõ lại chính xác câu bạn nghe được:";
+
+  // DẠNG 3: CHÍNH TẢ / TRẢ LỜI CÂU HỎI
+  else if (typeLow.includes("chính tả") || typeLow.includes("trả lời")) {
+    let defaultInst = typeLow.includes("chính tả") ? "Hãy lắng nghe và gõ lại chính xác câu bạn nghe được:" : "Hãy nhập câu trả lời của bạn vào ô trống:";
+    document.getElementById('oc-instruction').innerText = rawContent || defaultInst;
     document.getElementById('oc-chinhta-area').classList.remove('hidden');
     
+    // Nếu là dạng "Trả lời", ta có thể Ẩn/Hiện nút Nghe nếu người dùng gõ câu hỏi vào Cột C
+    if(typeLow.includes("trả lời") && !rawContent) {
+        document.getElementById('oc-btn-ct-audio').classList.add('hidden'); // Ẩn nút nếu không có gì để nghe
+    } else {
+        document.getElementById('oc-btn-ct-audio').classList.remove('hidden');
+    }
+
     ocCtIsAnswered = false;
     document.getElementById('oc-ct-input').value = "";
     document.getElementById('oc-ct-input').disabled = false;
@@ -582,11 +606,103 @@ function renderOcQuestion() {
     document.getElementById('oc-btn-ct-check').classList.remove('hidden');
     document.getElementById('oc-btn-ct-help').classList.remove('hidden');
     
-    playOcChinhTaAudio();
+    if(typeLow.includes("chính tả")) playOcChinhTaAudio();
+  }
+
+  // DẠNG 4: ĐIỀN TỪ & SẮP XẾP CÂU
+  else if (typeLow.includes("điền từ") || typeLow.includes("sắp xếp câu")) {
+    document.getElementById('oc-instruction').innerText = typeLow.includes("điền từ") ? "Hãy chọn pháp khí (từ) thích hợp để điền vào chỗ trống:" : "Hãy nhấp (click) vào các từ bên dưới để di chuyển và sắp xếp thành câu hoàn chỉnh:";
+    document.getElementById('oc-dientusapxep-area').classList.remove('hidden');
+    document.getElementById('oc-btn-dtsx-check').classList.remove('hidden');
+    document.getElementById('oc-btn-dtsx-help').classList.remove('hidden');
+    document.getElementById('oc-dtsx-feedback').innerHTML = "";
+    ocDtsxIsAnswered = false;
+
+    if (typeLow.includes("điền từ")) {
+      document.getElementById('oc-dientu-content').classList.remove('hidden');
+      document.getElementById('oc-sapxep-content').classList.add('hidden');
+      
+      document.getElementById('oc-dt-sentence').innerHTML = (rawContent || "").replace('___', '<span id="oc-dt-blank" class="inline-block min-w-[60px] border-b-4 border-[#b7906c] text-[#5c3d2e] font-bold px-2 text-center">...</span>');
+      const optionsDiv = document.getElementById('oc-dt-options');
+      optionsDiv.innerHTML = '';
+      const opts = (rawOptions || "").split('/').map(o => o.trim()).filter(o => o !== "");
+      opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "m-2 bg-[#fcf6e8] border-2 border-[#b7906c] text-[#5c3d2e] font-bold text-2xl py-3 px-6 rounded hover:bg-[#e0ac69] hover:text-white transition shadow-sm";
+        btn.innerText = opt;
+        btn.onclick = () => { speakChinese(opt); document.getElementById('oc-dt-blank').innerText = opt; document.getElementById('oc-dt-blank').classList.add('text-green-700'); };
+        optionsDiv.appendChild(btn);
+      });
+    } else {
+      document.getElementById('oc-dientu-content').classList.add('hidden');
+      document.getElementById('oc-sapxep-content').classList.remove('hidden');
+      
+      ocSelectedWords = [];
+      const answerBox = document.getElementById('oc-sx-answer-box');
+      const poolBox = document.getElementById('oc-sx-words-pool');
+      answerBox.innerHTML = ''; poolBox.innerHTML = '';
+      
+      // Nhận diện dấu phẩy Tiếng Việt (,) và Tiếng Trung (，)
+      let words = (rawContent || "").split(/[,，]/).map(w => w.trim()).filter(w => w !== "");
+      words.sort(() => Math.random() - 0.5); 
+      words.forEach((word) => {
+        const btn = document.createElement('button');
+        btn.className = "m-2 word-tile bg-[#fcf6e8] border-2 border-[#b7906c] text-[#5c3d2e] font-bold text-2xl py-3 px-5 rounded shadow-sm";
+        btn.innerText = word;
+        btn.onclick = () => toggleOcWord(btn, word);
+        poolBox.appendChild(btn);
+      });
+    }
   }
 }
 
-function playOcAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.content); }
+// Logic Sắp xếp & Điền từ (Ôn Cố Hiên)
+function toggleOcWord(btn, word) {
+  if (ocDtsxIsAnswered) return;
+  speakChinese(word); 
+  const answerBox = document.getElementById('oc-sx-answer-box'); const poolBox = document.getElementById('oc-sx-words-pool');
+  if (btn.parentElement === poolBox) { answerBox.appendChild(btn); ocSelectedWords.push(word); } 
+  else { poolBox.appendChild(btn); const idx = ocSelectedWords.indexOf(word); if(idx > -1) ocSelectedWords.splice(idx, 1); }
+}
+
+function checkOcDienTuSapXep() {
+  if (ocDtsxIsAnswered) return;
+  const q = ocQuestions[ocCurrentIndex]; const feedback = document.getElementById('oc-dtsx-feedback'); let isCorrect = false;
+  
+  if (q.type.toLowerCase().includes("điền từ")) {
+    const userAnswer = document.getElementById('oc-dt-blank').innerText; if (userAnswer === q.answer.trim()) isCorrect = true;
+  } else if (q.type.toLowerCase().includes("sắp xếp câu")) {
+    const userAnswer = ocSelectedWords.join(''); const formatText = (text) => text.replace(/[\s，。！？、]/g, ''); 
+    if (formatText(userAnswer) === formatText(q.answer)) isCorrect = true;
+  }
+  
+  if (isCorrect) {
+    ocScore += 2;
+    feedback.innerHTML = `<span class="text-green-600">Phá trận thành công! (+2 điểm)</span>`; speakChinese(q.answer); 
+    ocDtsxIsAnswered = true;
+    document.getElementById('oc-btn-dtsx-check').classList.add('hidden'); document.getElementById('oc-btn-dtsx-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
+  } else { 
+    ocScore -= 1;
+    feedback.innerHTML = `<span class="text-red-600">Trận pháp sai lệch, hãy thử lại! (-1 điểm)</span>`; 
+  }
+  document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
+}
+
+function showOcDienTuSapXepHelp() {
+  if (ocDtsxIsAnswered) return;
+  const q = ocQuestions[ocCurrentIndex]; const feedback = document.getElementById('oc-dtsx-feedback');
+  feedback.innerHTML = `<span class="text-[#8b5e34]">Đáp án: ${q.answer}</span>`; speakChinese(q.answer); 
+  ocDtsxIsAnswered = true;
+  document.getElementById('oc-btn-dtsx-check').classList.add('hidden'); document.getElementById('oc-btn-dtsx-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
+}
+
+
+// Logic Trắc Nghiệm Nghe
+function playOcAudio() { 
+  const q = ocQuestions[ocCurrentIndex]; 
+  // Chống đọc tiếng Việt nếu người dùng ghi câu hỏi tiếng Việt
+  speakChinese(q.content || q.answer); 
+}
 
 function checkOcTracNghiem() {
   if (!ocSelectedOption) return;
@@ -607,6 +723,7 @@ function showOcTracNghiemHelp() {
   document.getElementById('oc-btn-mc-check').classList.add('hidden'); document.getElementById('oc-btn-mc-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
 }
 
+// Logic Nghe lệnh Sư phụ
 function clickOcLiveWord(btn, word) {
   const targetWord = ocLiveAnswers[ocLiveCurrentStep];
   const feedback = document.getElementById('oc-live-feedback');
@@ -624,7 +741,8 @@ function clickOcLiveWord(btn, word) {
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
 }
 
-function playOcChinhTaAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.answer); }
+// Logic Chép Chính Tả / Trả lời
+function playOcChinhTaAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.content || q.answer); }
 
 function checkOcChinhTa() {
   if (ocCtIsAnswered) return;
@@ -636,7 +754,8 @@ function checkOcChinhTa() {
     ocCtIsAnswered = true; document.getElementById('oc-ct-input').disabled = true; document.getElementById('oc-btn-ct-check').classList.add('hidden');
     document.getElementById('oc-btn-ct-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
   } else {
-    ocScore -= 1; feedback.innerHTML = `<span class="text-red-600">Sai chữ rồi! Nghe lại nhé (Bị trừ 1 điểm)</span>`; playOcChinhTaAudio();
+    ocScore -= 1; feedback.innerHTML = `<span class="text-red-600">Sai rồi! Suy nghĩ kỹ lại nhé (Bị trừ 1 điểm)</span>`; 
+    if(q.type.toLowerCase().includes("chính tả")) playOcChinhTaAudio();
   }
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
 }
