@@ -1,4 +1,5 @@
 // ====== CẬP NHẬT WEB APP URL CỦA BẠN VÀO ĐÂY ======
+// HÃY GIỮ NGUYÊN 2 DẤU NGOẶC KÉP MÀU CAM Ở 2 ĐẦU ĐƯỜNG LINK
 const API_URL = "https://script.google.com/macros/s/AKfycbxgJhPz7nwNVwkgh5AqLJaUN9TZKAuAaSUvZk3jpYR0gR8y6XX9YLTWIMIspGYYAZVy/exec"; 
 
 function getDeviceId() {
@@ -43,7 +44,7 @@ async function checkLogin() {
       errorText.innerText = "Lệnh bài không chính xác."; errorText.classList.remove('hidden');
     }
   } catch (e) {
-    errorText.innerText = "Mất kết nối API."; errorText.classList.remove('hidden');
+    errorText.innerText = "Mất kết nối API. Hãy kiểm tra lại link API của Sư phụ!"; errorText.classList.remove('hidden');
   }
   btn.innerText = "Xác Nhận"; btn.disabled = false;
 }
@@ -52,15 +53,13 @@ let gameData = { lessons: [] };
 let currentAppMode = ''; 
 
 async function loadGameData() {
-async function loadGameData() {
   const loadingScreen = document.getElementById('loading-screen');
   loadingScreen.classList.remove('hidden');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 25000); 
 
   try {
-    const deviceId = getDeviceId(); // Lấy mã thiết bị
-    // Gửi kèm mã thiết bị lên để check bảo mật
+    const deviceId = getDeviceId();
     const response = await fetch(API_URL + "?action=getData&deviceId=" + encodeURIComponent(deviceId), { signal: controller.signal });
     clearTimeout(timeoutId);
     const res = await response.json();
@@ -70,12 +69,11 @@ async function loadGameData() {
       loadingScreen.classList.add('hidden');
       document.getElementById('mode-select-screen').classList.remove('hidden');
     } 
-    // AI PHÁT HIỆN LỆNH BÀI BỊ XÓA -> TƯỚC QUYỀN
     else if (res.status === "unauthorized") {
       localStorage.removeItem('cobi_auth');
       localStorage.removeItem('cobi_student_name');
       alert("Lệnh bài của bạn đã bị thu hồi hoặc hết hạn. Vui lòng đăng nhập lại!");
-      window.location.reload(); // Ép F5 tải lại trang về màn hình Đăng nhập
+      window.location.reload(); 
     } 
     else {
       alert("Lỗi từ Google Sheets: " + res.message); loadingScreen.classList.add('hidden');
@@ -329,7 +327,7 @@ function finishGame3() {
 }
 
 
-// ================= NGỰ PHÁP TÂM QUYẾT (ĐÃ FIX LỖI CẤU TRÚC ĐA DÒNG) =================
+// ================= NGỰ PHÁP TÂM QUYẾT =================
 function startNguPhapTheory() {
   showScreen('np-theory-screen');
   const container = document.getElementById('np-theory-content'); 
@@ -365,7 +363,6 @@ function startNguPhapTheory() {
           });
         }
         
-        // Render từng khối giải thích độc lập trong cùng một điểm ngữ pháp
         detailsHtml += `<div class="mb-8 pb-8 ${dIdx < item.details.length - 1 ? 'border-b-2 border-dashed border-[#b7906c]/40' : ''}">`;
         
         if (formulaHtml) {
@@ -378,7 +375,6 @@ function startNguPhapTheory() {
         }
         
         if (usageHtml) {
-          // Chỉ thêm số đếm "Cách dùng 1, 2..." nếu ô cấu trúc bị trống (như trong ảnh mẫu)
           detailsHtml += `
             <div class="mb-5">
               <p class="text-[#8b5e34] font-bold mb-2">Cách dùng ${item.details.length > 1 && !formulaHtml ? dIdx + 1 : ''}:</p>
@@ -400,7 +396,6 @@ function startNguPhapTheory() {
       });
     }
     
-    // Gói toàn bộ vào trong 1 thẻ Card lớn mang tên Điểm Ngữ Pháp
     const card = document.createElement('div');
     card.className = "bg-[#fcf6e8] border-2 border-[#b7906c] rounded-xl p-6 md:p-10 mb-10 shadow-lg";
     card.innerHTML = `
@@ -591,7 +586,6 @@ function renderOcQuestion() {
   }
 }
 
-// Logic Trắc Nghiệm Nghe
 function playOcAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.content); }
 
 function checkOcTracNghiem() {
@@ -613,7 +607,6 @@ function showOcTracNghiemHelp() {
   document.getElementById('oc-btn-mc-check').classList.add('hidden'); document.getElementById('oc-btn-mc-help').classList.add('hidden'); document.getElementById('oc-btn-next').classList.remove('hidden');
 }
 
-// Logic Nghe lệnh Sư phụ
 function clickOcLiveWord(btn, word) {
   const targetWord = ocLiveAnswers[ocLiveCurrentStep];
   const feedback = document.getElementById('oc-live-feedback');
@@ -631,7 +624,6 @@ function clickOcLiveWord(btn, word) {
   document.getElementById('oc-score-display').innerText = `Điểm: ${ocScore}`;
 }
 
-// Logic Chép Chính Tả
 function playOcChinhTaAudio() { const q = ocQuestions[ocCurrentIndex]; speakChinese(q.answer); }
 
 function checkOcChinhTa() {
