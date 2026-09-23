@@ -170,16 +170,33 @@
           </div>
         </div>
 
-        <!-- Khu 3: Chép Chính Tả (MỚI) -->
+        <!-- Khu 3: Chép Chính Tả / Trả Lời Câu Hỏi -->
         <div id="oc-chinhta-area" class="hidden w-full max-w-2xl mx-auto text-center">
-          <button onclick="playOcChinhTaAudio()" class="mx-auto scroll-container p-6 text-center text-xl font-bold flex flex-col items-center justify-center hover:border-[#8b5e34] hover:shadow-lg transition mb-8 w-full shadow-sm bg-[#fcf6e8]">
-            <span class="text-5xl mb-3">🔊</span><span>Bấm để nghe đọc</span>
+          <button onclick="playOcChinhTaAudio()" id="oc-btn-ct-audio" class="mx-auto scroll-container p-6 text-center text-xl font-bold flex flex-col items-center justify-center hover:border-[#8b5e34] hover:shadow-lg transition mb-8 w-full shadow-sm bg-[#fcf6e8]">
+            <span class="text-5xl mb-3">🔊</span><span>Bấm để nghe</span>
           </button>
           <input type="text" id="oc-ct-input" placeholder="Gõ Hán tự vào đây..." class="w-full p-4 mb-4 border-2 border-[#b7906c] rounded bg-[#fcf6e8] text-[#5c3d2e] font-bold text-xl md:text-2xl text-center focus:outline-none focus:border-[#8b5e34]">
           <div id="oc-ct-feedback" class="h-10 font-bold text-lg md:text-xl mb-4 flex items-center justify-center"></div>
           <div class="flex justify-center gap-4">
             <button id="oc-btn-ct-check" onclick="checkOcChinhTa()" class="bg-[#b7906c] text-white font-bold py-3 px-8 rounded transition hover:bg-[#8b5e34] shadow text-lg">Kiểm tra</button>
             <button id="oc-btn-ct-help" onclick="showOcChinhTaHelp()" class="bg-gray-400 text-white font-bold py-3 px-8 rounded transition hover:bg-gray-500 shadow text-lg">Trợ giúp</button>
+          </div>
+        </div>
+
+        <!-- Khu 4 & 5: Điền từ & Sắp xếp câu (MỚI BỔ SUNG) -->
+        <div id="oc-dientusapxep-area" class="hidden w-full max-w-3xl mx-auto text-center">
+          <div id="oc-dientu-content" class="hidden">
+            <div id="oc-dt-sentence" class="text-2xl font-bold text-[#7f5539] mb-8 bg-[#fefae0] p-6 border-2 border-[#b7906c] rounded leading-loose"></div>
+            <div id="oc-dt-options" class="flex flex-wrap justify-center gap-4 mb-8"></div>
+          </div>
+          <div id="oc-sapxep-content" class="hidden">
+            <div id="oc-sx-answer-box" class="min-h-[100px] p-4 bg-[#fefae0] border-2 border-dashed border-[#b7906c] rounded flex flex-wrap gap-3 justify-center items-center mb-8"></div>
+            <div id="oc-sx-words-pool" class="flex flex-wrap justify-center gap-3 mb-8"></div>
+          </div>
+          <div id="oc-dtsx-feedback" class="h-10 font-bold text-lg mb-4 flex items-center justify-center"></div>
+          <div class="flex justify-center gap-4">
+            <button id="oc-btn-dtsx-check" onclick="checkOcDienTuSapXep()" class="bg-[#b7906c] text-white font-bold py-3 px-8 rounded transition hover:bg-[#8b5e34] shadow text-lg">Phá Trận</button>
+            <button id="oc-btn-dtsx-help" onclick="showOcDienTuSapXepHelp()" class="bg-gray-400 text-white font-bold py-3 px-8 rounded transition hover:bg-gray-500 shadow text-lg">Trợ giúp</button>
           </div>
         </div>
 
