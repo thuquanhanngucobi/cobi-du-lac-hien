@@ -52,20 +52,32 @@ let gameData = { lessons: [] };
 let currentAppMode = ''; 
 
 async function loadGameData() {
+async function loadGameData() {
   const loadingScreen = document.getElementById('loading-screen');
   loadingScreen.classList.remove('hidden');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 25000); 
 
   try {
-    const response = await fetch(API_URL + "?action=getData", { signal: controller.signal });
+    const deviceId = getDeviceId(); // Lấy mã thiết bị
+    // Gửi kèm mã thiết bị lên để check bảo mật
+    const response = await fetch(API_URL + "?action=getData&deviceId=" + encodeURIComponent(deviceId), { signal: controller.signal });
     clearTimeout(timeoutId);
     const res = await response.json();
+    
     if(res.status === "ok") {
       gameData.lessons = res.data;
       loadingScreen.classList.add('hidden');
       document.getElementById('mode-select-screen').classList.remove('hidden');
-    } else {
+    } 
+    // AI PHÁT HIỆN LỆNH BÀI BỊ XÓA -> TƯỚC QUYỀN
+    else if (res.status === "unauthorized") {
+      localStorage.removeItem('cobi_auth');
+      localStorage.removeItem('cobi_student_name');
+      alert("Lệnh bài của bạn đã bị thu hồi hoặc hết hạn. Vui lòng đăng nhập lại!");
+      window.location.reload(); // Ép F5 tải lại trang về màn hình Đăng nhập
+    } 
+    else {
       alert("Lỗi từ Google Sheets: " + res.message); loadingScreen.classList.add('hidden');
     }
   } catch (e) {
